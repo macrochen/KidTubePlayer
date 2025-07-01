@@ -1,0 +1,30 @@
+# Xcode
+.DS_Store
+*.xcodeproj
+*.xcworkspace
+
+# Swift Package Manager
+.build/
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/
+
+# Generated files
+*.swiftc
+*.o
+*.d
+
+# Dependencies
+node_modules/
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# Other
+.env
+
+error/

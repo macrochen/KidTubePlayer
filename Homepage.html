@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KidTube Player - iPad Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+    <style>
+        body {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        body::-webkit-scrollbar {
+            display: none;
+        }
+        .mockup-container {
+            width: 1024px;
+            height: 768px;
+            background-color: #000;
+            border-radius: 44px;
+            padding: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        .screen {
+            background: linear-gradient(160deg, #f5f9ff 0%, #e6eaf2 100%);
+            width: 100%;
+            height: 100%;
+            border-radius: 28px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body class="bg-gray-200 flex items-center justify-center min-h-screen">
+    <div class="mockup-container">
+        <div class="screen">
+            <header class="px-12 pt-12 pb-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-5xl font-bold text-gray-800 tracking-tight">KidTube Player</h1>
+                        <p class="text-xl text-gray-500 mt-2">Watch and learn with your favorite Minecraft videos!</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <i class="ri-search-line text-3xl text-gray-400"></i>
+                        <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=2080&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" class="w-14 h-14 rounded-full border-4 border-white shadow-md">
+                    </div>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto px-12 pb-12">
+                <div class="grid grid-cols-4 gap-x-8 gap-y-10">
+                    <a href="PlayerPage.html" class="card-item group">
+                        <div class="aspect-video bg-gray-300 rounded-2xl overflow-hidden shadow-lg group-hover:shadow-2xl transition-shadow duration-300 transform group-hover:-translate-y-2">
+                            <img src="https://img.youtube.com/vi/K-N_s5Yd2Yc/hqdefault.jpg" alt="Minecraft Survival Guide" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="mt-4 text-lg font-semibold text-gray-800">Minecraft Survival Guide</h3>
+                        <p class="text-gray-500 text-sm">A complete guide to surviving and thriving.</p>
+                    </a>
+                    <a href="PlayerPage.html" class="card-item group">
+                        <div class="aspect-video bg-gray-300 rounded-2xl overflow-hidden shadow-lg group-hover:shadow-2xl transition-shadow duration-300 transform group-hover:-translate-y-2">
+                            <img src="https://img.youtube.com/vi/5s5i-z4aGvE/hqdefault.jpg" alt="Building a Modern House" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="mt-4 text-lg font-semibold text-gray-800">Building a Modern House</h3>
+                        <p class="text-gray-500 text-sm">Step-by-step tutorial for a sleek home.</p>
+                    </a>
+                    <a href="PlayerPage.html" class="card-item group">
+                        <div class="aspect-video bg-gray-300 rounded-2xl overflow-hidden shadow-lg group-hover:shadow-2xl transition-shadow duration-300 transform group-hover:-translate-y-2">
+                            <img src="https://img.youtube.com/vi/a2_M2_Fv2BA/hqdefault.jpg" alt="Exploring the Nether" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="mt-4 text-lg font-semibold text-gray-800">Exploring the Nether</h3>
+                        <p class="text-gray-500 text-sm">Everything you need to know about the Nether.</p>
+                    </a>
+                    <a href="PlayerPage.html" class="card-item group">
+                        <div class="aspect-video bg-gray-300 rounded-2xl overflow-hidden shadow-lg group-hover:shadow-2xl transition-shadow duration-300 transform group-hover:-translate-y-2">
+                            <img src="https://img.youtube.com/vi/i_pnbM1fR1k/hqdefault.jpg" alt="Redstone for Beginners" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="mt-4 text-lg font-semibold text-gray-800">Redstone for Beginners</h3>
+                        <p class="text-gray-500 text-sm">An introduction to Minecraft's circuits.</p>
+                    </a>
+                    <a href="PlayerPage.html" class="card-item group">
+                        <div class="aspect-video bg-gray-300 rounded-2xl overflow-hidden shadow-lg group-hover:shadow-2xl transition-shadow duration-300 transform group-hover:-translate-y-2">
+                            <img src="https://img.youtube.com/vi/U891B9_wW8s/hqdefault.jpg" alt="Top 10 Minecraft Builds" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="mt-4 text-lg font-semibold text-gray-800">Top 10 Minecraft Builds</h3>
+                        <p class="text-gray-500 text-sm">Incredible creations to inspire you.</p>
+                    </a>
+                    <a href="PlayerPage.html" class="card-item group">
+                        <div class="aspect-video bg-gray-300 rounded-2xl overflow-hidden shadow-lg group-hover:shadow-2xl transition-shadow duration-300 transform group-hover:-translate-y-2">
+                            <img src="https://img.youtube.com/vi/z9t9mAYSs2Q/hqdefault.jpg" alt="Minecraft Speedrun Tips" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="mt-4 text-lg font-semibold text-gray-800">Minecraft Speedrun Tips</h3>
+                        <p class="text-gray-500 text-sm">Learn how to beat the game faster.</p>
+                    </a>
+                    <a href="PlayerPage.html" class="card-item group">
+                        <div class="aspect-video bg-gray-300 rounded-2xl overflow-hidden shadow-lg group-hover:shadow-2xl transition-shadow duration-300 transform group-hover:-translate-y-2">
+                            <img src="https://img.youtube.com/vi/8d_n4c3_p2U/hqdefault.jpg" alt="Creative Mode Fun" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="mt-4 text-lg font-semibold text-gray-800">Creative Mode Fun</h3>
+                        <p class="text-gray-500 text-sm">Ideas for your next creative project.</p>
+                    </a>
+                    <a href="PlayerPage.html" class="card-item group">
+                        <div class="aspect-video bg-gray-300 rounded-2xl overflow-hidden shadow-lg group-hover:shadow-2xl transition-shadow duration-300 transform group-hover:-translate-y-2">
+                            <img src="https://img.youtube.com/vi/Pl8y77-Wk4M/hqdefault.jpg" alt="How to Tame a Fox" class="w-full h-full object-cover">
+                        </div>
+                        <h3 class="mt-4 text-lg font-semibold text-gray-800">How to Tame a Fox</h3>
+                        <p class="text-gray-500 text-sm">A guide to finding and taming foxes.</p>
+                    </a>
+                </div>
+            </main>
+
+            <footer class="px-12 py-4 text-right">
+                <p class="text-xs text-gray-400">Powered by YouTube</p>
+            </footer>
+        </div>
+    </div>
+</body>
+</html>
