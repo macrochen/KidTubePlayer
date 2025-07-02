@@ -1,15 +1,16 @@
 {
   "manifest_version": 3,
-  "name": "YouTube 视频列表制作插件",
-  "version": "1.0",
-  "description": "在 YouTube 上轻松选择视频并导出为 JSON 列表，供 iOS App 使用。",
+  "name": "视频列表制作插件",
+  "version": "1.1",
+  "description": "在 YouTube 和 Bilibili 上轻松选择视频并导出为 JSON 列表。",
   "permissions": [
     "storage",
     "activeTab",
     "scripting"
   ],
   "host_permissions": [
-    "*://www.youtube.com/*"
+    "*://www.youtube.com/*",
+    "*://*.bilibili.com/*"
   ],
   "action": {
     "default_title": "激活视频选择模式"
@@ -19,7 +20,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://www.youtube.com/*"],
+      "matches": ["*://www.youtube.com/*", "*://*.bilibili.com/*"],
       "css": ["style.css"],
       "js": ["content.js"]
     }

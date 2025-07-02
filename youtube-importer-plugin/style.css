@@ -1,5 +1,5 @@
 /* 添加按钮的样式 */
-.yt-importer-add-btn {
+.importer-add-btn {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -15,22 +15,22 @@
   transition: background-color 0.2s, transform 0.2s;
 }
 
-.yt-importer-add-btn:hover {
+.importer-add-btn:hover {
   background-color: #ff0000; /* YouTube 红色 */
   transform: scale(1.05);
 }
 
-.yt-importer-add-btn.added {
+.importer-add-btn.added {
   background-color: #2ecc71; /* 绿色 */
   cursor: not-allowed;
 }
 
-.yt-importer-add-btn.error {
+.importer-add-btn.error {
     background-color: #f39c12; /* 橙色 */
 }
 
 /* 右下角面板的样式 */
-#yt-importer-panel {
+#importer-panel {
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -46,7 +46,7 @@
   font-family: 'Roboto', 'Arial', sans-serif;
 }
 
-#yt-importer-panel .panel-header {
+#importer-panel .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -54,12 +54,12 @@
   border-bottom: 1px solid #444;
 }
 
-#yt-importer-panel .panel-header h3 {
+#importer-panel .panel-header h3 {
   margin: 0;
   font-size: 16px;
 }
 
-#yt-importer-panel #close-panel-btn {
+#importer-panel #close-panel-btn {
   background: none;
   border: none;
   color: #aaa;
@@ -67,19 +67,19 @@
   cursor: pointer;
 }
 
-#yt-importer-panel .panel-body {
+#importer-panel .panel-body {
   padding: 10px;
   overflow-y: auto;
   flex-grow: 1;
 }
 
-#yt-importer-panel .empty-state {
+#importer-panel .empty-state {
   color: #888;
   text-align: center;
   padding: 20px;
 }
 
-#yt-importer-panel .list-item {
+#importer-panel .list-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -88,14 +88,14 @@
   font-size: 14px;
 }
 
-#yt-importer-panel .list-item span {
+#importer-panel .list-item span {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   margin-right: 10px;
 }
 
-#yt-importer-panel .remove-btn {
+#importer-panel .remove-btn {
   background: #555;
   color: white;
   border: none;
@@ -108,12 +108,12 @@
   flex-shrink: 0;
 }
 
-#yt-importer-panel .panel-footer {
+#importer-panel .panel-footer {
   padding: 15px;
   border-top: 1px solid #444;
 }
 
-#yt-importer-panel #export-json-btn {
+#importer-panel #export-json-btn {
   width: 100%;
   padding: 10px;
   background-color: #ff0000;
@@ -126,11 +126,11 @@
   transition: background-color 0.2s;
 }
 
-#yt-importer-panel #export-json-btn:hover {
+#importer-panel #export-json-btn:hover {
   background-color: #c00;
 }
 
-#yt-importer-panel #export-json-btn.disabled {
+#importer-panel #export-json-btn.disabled {
   background-color: #555;
   cursor: not-allowed;
 }

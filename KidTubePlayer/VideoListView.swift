@@ -60,9 +60,12 @@ struct VideoListView: View {
                 Text("你确定要删除选中的视频吗？")
             }
             // 关键：监听 videoImporter.importResult 的变化
-            .onChange(of: videoImporter.importResult) { result in
-                // 只要结果不是 nil，就准备显示提示框
-                if result != nil {
+            // 【已修改】
+            // 关键：监听 videoImporter.importResult 的变化
+            // 为了兼容 iOS 17，将闭包参数改为接收两个值
+            .onChange(of: videoImporter.importResult) { _, newValue in
+                // 只要新结果不是 nil，就准备显示提示框
+                if newValue != nil {
                     isShowingImportResult = true
                 }
             }
@@ -83,6 +86,9 @@ struct VideoListView: View {
                 Text(importAlertMessage(for: result))
             }
             .environment(\.editMode, $editMode)
+            .navigationDestination(for: Video.self) { video in
+                PlayerView(video: video)
+            }
         }
     }
 

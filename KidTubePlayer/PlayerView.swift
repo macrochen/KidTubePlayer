@@ -6,16 +6,20 @@ struct PlayerView: View {
 
     var body: some View {
         ZStack {
-            // 第一层：播放器视图，填满整个背景
-            YouTubePlayerView(videoID: video.id)
-                .background(Color.black)
+            // 关键：根据平台选择不同的播放器
+            switch video.platform {
+            case .youtube:
+                YouTubePlayerView(videoID: video.id)
+                    .background(Color.black)
+            case .bilibili:
+                BilibiliPlayerView(videoID: video.id)
+                    .background(Color.black)
+            }
 
-            // 第二层：UI覆盖层，包含返回按钮
+            // UI 覆盖层（返回按钮）保持不变
             VStack {
                 HStack {
-                    // 返回按钮
                     Button(action: {
-                        // 点击时调用 dismiss 返回上一页
                         self.presentationMode.wrappedValue.dismiss()
                     }) {
                         Image(systemName: "chevron.backward")
@@ -25,11 +29,11 @@ struct PlayerView: View {
                             .background(Color.black.opacity(0.6))
                             .clipShape(Circle())
                     }
-                    .padding([.top, .leading]) // 给按钮一些边距，让它离开屏幕边缘
+                    .padding([.top, .leading])
 
-                    Spacer() // 将按钮推到左侧
+                    Spacer()
                 }
-                Spacer() // 将整个 HStack 推到顶部
+                Spacer()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -41,6 +45,7 @@ struct PlayerView: View {
 
 struct PlayerView_Previews: PreviewProvider {
     static var previews: some View {
+        // 更新预览以使用新的 Video 构造函数
         PlayerView(video: VideoProvider.allVideos.first!)
             .previewDevice("iPad Pro (11-inch) (4th generation)")
             .previewInterfaceOrientation(.landscapeLeft)
