@@ -1,3 +1,4 @@
+
 import SwiftUI
 
 struct VideoListView: View {
@@ -6,14 +7,10 @@ struct VideoListView: View {
     @State private var editMode: EditMode = .inactive
     @State private var selectedVideoIds: Set<String> = []
     @State private var isShowingDeleteConfirmation = false
-
-    private let columns = [
-        GridItem(.flexible(), spacing: 20),
-        GridItem(.flexible(), spacing: 20),
-        GridItem(.flexible(), spacing: 20),
-        GridItem(.flexible(), spacing: 20)
-    ]
     
+    // 新增一个状态，用于控制导入结果提示框的显示
+    @State private var isShowingImportResult = false
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -31,9 +28,6 @@ struct VideoListView: View {
                     }
                 }
                 .padding(40)
-            }
-            .navigationDestination(for: Video.self) { video in
-                PlayerView(video: video)
             }
             .background(Color(white: 0.97))
             .ignoresSafeArea()
@@ -59,25 +53,36 @@ struct VideoListView: View {
                     videoImporter.importVideos(from: url)
                 }
             }
-            .alert(isPresented: $isShowingDeleteConfirmation) {
-                Alert(
-                    title: Text("Delete Videos"),
-                    message: Text("Are you sure you want to delete the selected videos?"),
-                    primaryButton: .destructive(Text("Delete")) {
-                        deleteSelectedVideos()
-                    },
-                    secondaryButton: .cancel()
-                )
+            .alert("删除视频", isPresented: $isShowingDeleteConfirmation) {
+                Button("删除", role: .destructive) { deleteSelectedVideos() }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("你确定要删除选中的视频吗？")
+            }
+            // 关键：监听 videoImporter.importResult 的变化
+            .onChange(of: videoImporter.importResult) { result in
+                // 只要结果不是 nil，就准备显示提示框
+                if result != nil {
+                    isShowingImportResult = true
+                }
+            }
+            // 关键：定义导入结果的提示框
+            .alert(
+                "导入结果",
+                isPresented: $isShowingImportResult,
+                presenting: videoImporter.importResult // 将结果数据传递给 alert
+            ) { result in
+                Button("好") {
+                    // 点击后重置结果，以便下次还能触发
+                    videoImporter.importResult = nil
+                }
+            } message: { result in
+                // 【已修改】
+                // 直接调用新函数来获取消息字符串，然后用 Text 显示
+                // 这样就避免了在视图层级中进行计算
+                Text(importAlertMessage(for: result))
             }
             .environment(\.editMode, $editMode)
-        }
-    }
-
-    private func toggleSelection(for video: Video) {
-        if selectedVideoIds.contains(video.id) {
-            selectedVideoIds.remove(video.id)
-        } else {
-            selectedVideoIds.insert(video.id)
         }
     }
 
@@ -86,7 +91,24 @@ struct VideoListView: View {
         selectedVideoIds.removeAll()
         editMode = .inactive
     }
+    
+    // 【新增的辅助函数】
+    // 将拼接字符串的逻辑从 body 中抽离出来
+    private func importAlertMessage(for result: ImportResult) -> String {
+        if let errorMessage = result.errorMessage {
+            return errorMessage
+        } else {
+            var message = "文件总共包含 \(result.totalInFile) 个视频。\n"
+            message += "成功导入 \(result.successCount) 个新视频。"
+            if result.duplicateCount > 0 {
+                message += "\n\(result.duplicateCount) 个视频因为已存在而被跳过。"
+            }
+            return message
+        }
+    }
 }
+
+// --- 其他子视图保持不变 ---
 
 struct EmptyStateView: View {
     var body: some View {
@@ -161,14 +183,6 @@ struct HeaderView: View {
             }
             Spacer()
         }
-    }
-}
-
-struct FooterView: View {
-    var body: some View {
-        Text("Powered by YouTube")
-            .font(.caption)
-            .foregroundColor(.gray)
     }
 }
 

@@ -1,0 +1,136 @@
+/* 添加按钮的样式 */
+.yt-importer-add-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+.yt-importer-add-btn:hover {
+  background-color: #ff0000; /* YouTube 红色 */
+  transform: scale(1.05);
+}
+
+.yt-importer-add-btn.added {
+  background-color: #2ecc71; /* 绿色 */
+  cursor: not-allowed;
+}
+
+.yt-importer-add-btn.error {
+    background-color: #f39c12; /* 橙色 */
+}
+
+/* 右下角面板的样式 */
+#yt-importer-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+  max-height: 400px;
+  background-color: #282828;
+  color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Roboto', 'Arial', sans-serif;
+}
+
+#yt-importer-panel .panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  border-bottom: 1px solid #444;
+}
+
+#yt-importer-panel .panel-header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+#yt-importer-panel #close-panel-btn {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+#yt-importer-panel .panel-body {
+  padding: 10px;
+  overflow-y: auto;
+  flex-grow: 1;
+}
+
+#yt-importer-panel .empty-state {
+  color: #888;
+  text-align: center;
+  padding: 20px;
+}
+
+#yt-importer-panel .list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 5px;
+  border-bottom: 1px solid #333;
+  font-size: 14px;
+}
+
+#yt-importer-panel .list-item span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 10px;
+}
+
+#yt-importer-panel .remove-btn {
+  background: #555;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  text-align: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+#yt-importer-panel .panel-footer {
+  padding: 15px;
+  border-top: 1px solid #444;
+}
+
+#yt-importer-panel #export-json-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: #ff0000;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#yt-importer-panel #export-json-btn:hover {
+  background-color: #c00;
+}
+
+#yt-importer-panel #export-json-btn.disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
