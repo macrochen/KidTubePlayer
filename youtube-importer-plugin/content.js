@@ -124,6 +124,8 @@ function extractVideoData(videoEl) {
     const titleLink = videoEl.querySelector('#video-title-link') || videoEl.querySelector('#video-title');
     const metadataBlock = videoEl.querySelector('#metadata-line');
     const channelNameEl = videoEl.querySelector('ytd-channel-name #text');
+    // 关键修复：使用更稳定、更现代的选择器来抓取头像图片
+    const authorAvatarEl = videoEl.querySelector('img.yt-spec-avatar-shape__image');
 
     // 1. 获取视频ID
     const videoId = titleLink.href.split('v=')[1].split('&')[0];
@@ -133,16 +135,20 @@ function extractVideoData(videoEl) {
 
     // 3. 获取作者
     const author = channelNameEl.textContent.trim();
+    
+    // 4. 获取作者头像 URL
+    const authorAvatarURL = authorAvatarEl ? authorAvatarEl.src : null;
 
-    // 4. 获取播放量和上传日期
+    // 5. 获取播放量和上传日期
     const metadataSpans = metadataBlock.querySelectorAll('span');
     const viewCountText = metadataSpans[0] ? metadataSpans[0].textContent : '0';
     const uploadDateText = metadataSpans[1] ? metadataSpans[1].textContent : '现在';
 
     const viewCount = parseViews(viewCountText);
-    const uploadDate = parseDate(uploadDateText); // 使用优化后的日期解析函数
+    const uploadDate = parseDate(uploadDateText);
 
-    return { id: videoId, title, author, viewCount, uploadDate };
+    // 在返回的对象中包含头像 URL
+    return { id: videoId, title, author, viewCount, uploadDate, authorAvatarURL };
   } catch (error) {
     console.error("数据提取失败:", error, videoEl);
     return null;
@@ -257,7 +263,7 @@ function parseViews(text) {
 }
 
 /**
- * 关键优化：解析相对时间或绝对时间字符串
+ * 解析相对时间或绝对时间字符串
  * @param {string} text e.g., "11小时前" or "2023年10月25日"
  * @returns {string} ISO 8601 format date string (e.g., "2024-07-21T12:30:00.000Z")
  */
