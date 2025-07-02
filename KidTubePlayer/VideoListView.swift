@@ -87,7 +87,16 @@ struct VideoListView: View {
             }
             .environment(\.editMode, $editMode)
             .navigationDestination(for: Video.self) { video in
-                PlayerView(video: video)
+                // 判断平台
+                if video.platform == .bilibili {
+                    // 如果是B站视频，统一导航到我们新的“智能调度”视图
+                    BilibiliLoadingDispatchView(video: video)
+                } else {
+                    // 如果是YouTube视频，创建一个简单的ViewModel
+                    let viewModel = PlayerViewModel(singleVideo: video)
+                    // 直接导航到简单的播放器视图
+                    PlayerView(viewModel: viewModel)
+                }
             }
         }
     }
