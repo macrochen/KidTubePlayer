@@ -3,13 +3,16 @@ import SwiftUI
 
 struct VideoListView: View {
     @StateObject private var videoImporter = VideoImporter()
+    @StateObject private var appSettings = AppSettings() // 管理家长模式状态
+    
     @State private var isImporting = false
     @State private var editMode: EditMode = .inactive
     @State private var selectedVideoIds: Set<String> = []
     @State private var isShowingDeleteConfirmation = false
-    
-    // 新增一个状态，用于控制导入结果提示框的显示
     @State private var isShowingImportResult = false
+    
+    // 控制密码输入页面的显示
+    @State private var isShowingParentalGate = false
 
     var body: some View {
         NavigationStack {
@@ -32,20 +35,11 @@ struct VideoListView: View {
             .background(Color(white: 0.97))
             .ignoresSafeArea()
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    EditButton()
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if editMode.isEditing {
-                        Button("Delete") {
-                            isShowingDeleteConfirmation = true
-                        }
-                        .disabled(selectedVideoIds.isEmpty)
-                    } else {
-                        Button("Import") {
-                            isImporting = true
-                        }
-                    }
+                // 根据是否解锁家长模式，显示不同的工具栏
+                if appSettings.isParentalModeUnlocked {
+                    parentalToolbar
+                } else {
+                    kidToolbar
                 }
             }
             .sheet(isPresented: $isImporting) {
@@ -53,50 +47,95 @@ struct VideoListView: View {
                     videoImporter.importVideos(from: url)
                 }
             }
+            // 新增：显示密码输入页面的 sheet
+            .sheet(isPresented: $isShowingParentalGate) {
+                ParentalGateView(mode: UserSettings.isPasswordSet ? .unlock : .setup)
+                    .environmentObject(appSettings)
+            }
             .alert("删除视频", isPresented: $isShowingDeleteConfirmation) {
                 Button("删除", role: .destructive) { deleteSelectedVideos() }
                 Button("取消", role: .cancel) {}
             } message: {
                 Text("你确定要删除选中的视频吗？")
             }
-            // 关键：监听 videoImporter.importResult 的变化
-            // 【已修改】
-            // 关键：监听 videoImporter.importResult 的变化
-            // 为了兼容 iOS 17，将闭包参数改为接收两个值
             .onChange(of: videoImporter.importResult) { _, newValue in
-                // 只要新结果不是 nil，就准备显示提示框
                 if newValue != nil {
                     isShowingImportResult = true
                 }
             }
-            // 关键：定义导入结果的提示框
             .alert(
                 "导入结果",
                 isPresented: $isShowingImportResult,
-                presenting: videoImporter.importResult // 将结果数据传递给 alert
+                presenting: videoImporter.importResult
             ) { result in
                 Button("好") {
-                    // 点击后重置结果，以便下次还能触发
                     videoImporter.importResult = nil
                 }
             } message: { result in
-                // 【已修改】
-                // 直接调用新函数来获取消息字符串，然后用 Text 显示
-                // 这样就避免了在视图层级中进行计算
                 Text(importAlertMessage(for: result))
             }
             .environment(\.editMode, $editMode)
             .navigationDestination(for: Video.self) { video in
-                // 判断平台
                 if video.platform == .bilibili {
-                    // 如果是B站视频，统一导航到我们新的“智能调度”视图
                     BilibiliLoadingDispatchView(video: video)
                 } else {
-                    // 如果是YouTube视频，创建一个简单的ViewModel
                     let viewModel = PlayerViewModel(singleVideo: video)
-                    // 直接导航到简单的播放器视图
                     PlayerView(viewModel: viewModel)
                 }
+            }
+        }
+    }
+
+    // MARK: - Toolbars
+
+    // 家长模式解锁后的工具栏
+    private var parentalToolbar: some ToolbarContent {
+        Group {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    appSettings.isParentalModeUnlocked = false
+                    editMode = .inactive
+                }) {
+                    Text("退出家长模式")
+                }
+            }
+            ToolbarItem(placement: .navigationBarTrailing) {
+                HStack {
+                    NavigationLink(destination: PlaybackHistoryView()) {
+                        Image(systemName: "clock.arrow.circlepath")
+                        Text("播放历史")
+                    }
+                    
+                    Button("导入") { isImporting = true }
+                    
+                    if editMode.isEditing {
+                        Button("完成") {
+                            editMode = .inactive
+                            selectedVideoIds.removeAll()
+                        }
+                    } else {
+                        Button("编辑") { editMode = .active }
+                    }
+                    
+                    if editMode.isEditing {
+                        Button("删除") {
+                            isShowingDeleteConfirmation = true
+                        }
+                        .disabled(selectedVideoIds.isEmpty)
+                    }
+                }
+            }
+        }
+    }
+
+    // 普通儿童模式下的工具栏
+    private var kidToolbar: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            Button(action: {
+                isShowingParentalGate = true
+            }) {
+                Image(systemName: "lock.shield")
+                    .font(.title2)
             }
         }
     }
@@ -107,8 +146,6 @@ struct VideoListView: View {
         editMode = .inactive
     }
     
-    // 【新增的辅助函数】
-    // 将拼接字符串的逻辑从 body 中抽离出来
     private func importAlertMessage(for result: ImportResult) -> String {
         if let errorMessage = result.errorMessage {
             return errorMessage

@@ -4,32 +4,27 @@ struct PlayerView: View {
     @Environment(\.presentationMode) var presentationMode
     
     @StateObject var viewModel: PlayerViewModel
+    
+    // 用于记录Bilibili播放开始时间
+    @State private var bilibiliPlaybackStartTime: Date?
 
     var body: some View {
         ZStack {
-            // 背景色
             Color.black.ignoresSafeArea()
             
-            // 播放器视图
             VStack {
                 if viewModel.video.platform == .bilibili {
                     BilibiliPlayerView(
                         videoID: viewModel.video.id,
                         page: viewModel.currentPage
                     )
-                    // 【核心修改】为播放器视图添加 .id() 修饰符
-                    // 当 currentPage 变化时，这个 id 就会变化
-                    // SwiftUI 会销毁旧的 BilibiliPlayerView，并创建一个全新的
                     .id(viewModel.currentPage)
                 } else {
-                    // YouTube 播放器
-                    YouTubePlayerView(videoID: viewModel.video.id)
+                    YouTubePlayerView(videoID: viewModel.video.id, videoTitle: viewModel.video.title)
                 }
             }
             
-            // UI 覆盖层（返回按钮、标题）
             VStack {
-                // 顶部栏：返回按钮和标题
                 HStack {
                     Button(action: {
                         self.presentationMode.wrappedValue.dismiss()
@@ -49,14 +44,37 @@ struct PlayerView: View {
                 .background(Color.black.opacity(0.3))
                 
                 Spacer()
-                
-                // 【已移除】
-                // 此处原本用于显示“上一P/下一P”按钮的 HStack 已被完全删除。
-                
             }
         }
         .navigationBarBackButtonHidden(true)
         .navigationBarHidden(true)
+        .onAppear(perform: handleOnAppear)
+        .onDisappear(perform: handleOnDisappear)
+    }
+    
+    private func handleOnAppear() {
+        if viewModel.video.platform == .bilibili {
+            bilibiliPlaybackStartTime = Date()
+        }
+    }
+    
+    private func handleOnDisappear() {
+        if viewModel.video.platform == .bilibili {
+            guard let startTime = bilibiliPlaybackStartTime else { return }
+            let endTime = Date()
+            
+            if endTime.timeIntervalSince(startTime) > 5.0 {
+                let record = PlaybackRecord(
+                    videoID: viewModel.video.id,
+                    videoTitle: viewModel.currentPartTitle, // 使用当前分P的标题
+                    platform: .bilibili,
+                    startTime: startTime,
+                    endTime: endTime
+                )
+                PlaybackHistoryManager.shared.addRecord(record)
+            }
+            bilibiliPlaybackStartTime = nil
+        }
     }
 }
 

@@ -4,8 +4,9 @@ import WebKit
 struct YouTubePlayerView: UIViewRepresentable {
 
     let videoID: String
+    let videoTitle: String // 新增 videoTitle，用于记录历史
+    
     private let playbackRateKey = "youtubePlaybackRate"
-    // 为每个视频创建一个独立的进度存储键
     private var progressKey: String { "progress-\(videoID)" }
 
     func makeUIView(context: Context) -> WKWebView {
@@ -14,9 +15,9 @@ struct YouTubePlayerView: UIViewRepresentable {
         configuration.mediaTypesRequiringUserActionForPlayback = []
         
         let contentController = configuration.userContentController
-        // 注册两个消息句柄：一个用于播放速度，一个用于播放进度
         contentController.add(context.coordinator, name: "playbackRateHandler")
         contentController.add(context.coordinator, name: "progressHandler")
+        contentController.add(context.coordinator, name: "playbackSessionHandler") // 新增：用于处理播放会话
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
@@ -25,10 +26,8 @@ struct YouTubePlayerView: UIViewRepresentable {
         webView.backgroundColor = .clear
         webView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
 
-        // --- 读取已保存的设置 ---
         let savedRate = UserDefaults.standard.double(forKey: playbackRateKey)
         let playbackRate = (savedRate == 0) ? 1.0 : savedRate
-        // 读取此视频的播放进度
         let startTime = UserDefaults.standard.double(forKey: progressKey)
 
         let htmlString = """
@@ -46,7 +45,7 @@ struct YouTubePlayerView: UIViewRepresentable {
                 const savedPlaybackRate = \(playbackRate);
                 const startTime = \(startTime);
                 var player;
-                var progressSaveInterval; // 用于持有计时器ID
+                var progressSaveInterval;
 
                 function onYouTubeIframeAPIReady() {
                     player = new YT.Player('player', {
@@ -55,29 +54,20 @@ struct YouTubePlayerView: UIViewRepresentable {
                             'playsinline': 1, 'autoplay': 1, 'rel': 0, 'controls': 1,
                             'enablejsapi': 1, 'modestbranding': 1,
                             'cc_lang_pref': 'zh-Hans'
-                            // 移除了 'start' 参数，改用更可靠的 seekTo 方法
                         },
                         events: {
                             'onReady': onPlayerReady,
                             'onPlaybackRateChange': onPlaybackRateChange,
-                            'onStateChange': onPlayerStateChange // 关键：添加状态变化监听
+                            'onStateChange': onPlayerStateChange
                         }
                     });
                 }
 
                 function onPlayerReady(event) {
                     event.target.setPlaybackRate(savedPlaybackRate);
-                    
-                    // 关键修复：使用 seekTo 强制跳转到指定时间，比 start 参数更可靠
                     event.target.seekTo(startTime, true);
                     event.target.playVideo();
-                    
-                    // 清理旧的计时器（以防万一）
-                    if (progressSaveInterval) {
-                        clearInterval(progressSaveInterval);
-                    }
-                    
-                    // 启动一个计时器，每3秒保存一次进度作为备份
+                    if (progressSaveInterval) clearInterval(progressSaveInterval);
                     progressSaveInterval = setInterval(saveProgress, 3000);
                 }
 
@@ -85,16 +75,18 @@ struct YouTubePlayerView: UIViewRepresentable {
                     window.webkit?.messageHandlers?.playbackRateHandler?.postMessage(event.data);
                 }
 
-                // 关键：监听播放状态变化
                 function onPlayerStateChange(event) {
-                    // YT.PlayerState.PAUSED = 2 (暂停)
-                    // YT.PlayerState.ENDED = 0 (结束)
-                    if (event.data == 2 || event.data == 0) {
-                        saveProgress(); // 在暂停或结束时立即保存进度
+                    // YT.PlayerState.PLAYING = 1
+                    // YT.PlayerState.PAUSED = 2
+                    // YT.PlayerState.ENDED = 0
+                    if (event.data == 1) { // Playing
+                        window.webkit.messageHandlers.playbackSessionHandler.postMessage("start");
+                    } else if (event.data == 2 || event.data == 0) { // Paused or Ended
+                        saveProgress();
+                        window.webkit.messageHandlers.playbackSessionHandler.postMessage("end");
                     }
                 }
 
-                // 抽离出保存进度的函数，方便复用
                 function saveProgress() {
                     if (player && typeof player.getCurrentTime === 'function') {
                         const currentTime = player.getCurrentTime();
@@ -117,21 +109,30 @@ struct YouTubePlayerView: UIViewRepresentable {
         return webView
     }
 
-    func updateUIView(_ uiView: WKWebView, context: Context) {
-        // 留空
-    }
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(self, playbackRateKey: playbackRateKey, progressKey: progressKey)
+        Coordinator(self, videoID: videoID, videoTitle: videoTitle, playbackRateKey: playbackRateKey, progressKey: progressKey)
+    }
+    
+    // 新增：当视图被销毁时，确保最后的播放记录被保存
+    static func dismantleUIView(_ uiView: WKWebView, coordinator: Coordinator) {
+        coordinator.endPlaybackSession()
     }
 
     class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         var parent: YouTubePlayerView
+        let videoID: String
+        let videoTitle: String
         let playbackRateKey: String
         let progressKey: String
+        
+        private var playbackStartTime: Date?
 
-        init(_ parent: YouTubePlayerView, playbackRateKey: String, progressKey: String) {
+        init(_ parent: YouTubePlayerView, videoID: String, videoTitle: String, playbackRateKey: String, progressKey: String) {
             self.parent = parent
+            self.videoID = videoID
+            self.videoTitle = videoTitle
             self.playbackRateKey = playbackRateKey
             self.progressKey = progressKey
         }
@@ -144,12 +145,44 @@ struct YouTubePlayerView: UIViewRepresentable {
                 }
             case "progressHandler":
                 if let progress = message.body as? Double, progress > 0 {
-                    // 接收到 JS 发来的进度并保存
                     UserDefaults.standard.set(progress, forKey: self.progressKey)
+                }
+            case "playbackSessionHandler":
+                if let action = message.body as? String {
+                    if action == "start" {
+                        startPlaybackSession()
+                    } else if action == "end" {
+                        endPlaybackSession()
+                    }
                 }
             default:
                 break
             }
+        }
+        
+        func startPlaybackSession() {
+            if playbackStartTime == nil {
+                playbackStartTime = Date()
+            }
+        }
+        
+        func endPlaybackSession() {
+            guard let startTime = playbackStartTime else { return }
+            
+            let endTime = Date()
+            // 只有当播放时长大于一个很小的值（比如5秒）时才记录，避免意外的短记录
+            if endTime.timeIntervalSince(startTime) > 5.0 {
+                let record = PlaybackRecord(
+                    videoID: self.videoID,
+                    videoTitle: self.videoTitle,
+                    platform: .youtube,
+                    startTime: startTime,
+                    endTime: endTime
+                )
+                PlaybackHistoryManager.shared.addRecord(record)
+            }
+            // 重置开始时间，为下一次播放做准备
+            playbackStartTime = nil
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
