@@ -48,10 +48,10 @@ struct PlaylistSidebarView: View {
                         }
                     }
                 }
-                .onChange(of: viewModel.currentPage) { newPage in
+                .onChange(of: viewModel.currentPage) { 
                     // 当 ViewModel 中的 currentPage 变化时，自动滚动到新的当前项
                     withAnimation {
-                        proxy.scrollTo(newPage, anchor: .center)
+                        proxy.scrollTo(viewModel.currentPage, anchor: .center)
                     }
                 }
             }

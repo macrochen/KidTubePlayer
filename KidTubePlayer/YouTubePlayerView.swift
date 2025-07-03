@@ -5,6 +5,7 @@ struct YouTubePlayerView: UIViewRepresentable {
 
     let videoID: String
     let videoTitle: String // 新增 videoTitle，用于记录历史
+    var onPlaybackEnded: ((PlaybackRecord) -> Void)? // 新增回调闭包
     
     private let playbackRateKey = "youtubePlaybackRate"
     private var progressKey: String { "progress-\(videoID)" }
@@ -112,7 +113,7 @@ struct YouTubePlayerView: UIViewRepresentable {
     func updateUIView(_ uiView: WKWebView, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(self, videoID: videoID, videoTitle: videoTitle, playbackRateKey: playbackRateKey, progressKey: progressKey)
+        Coordinator(self, videoID: videoID, videoTitle: videoTitle, playbackRateKey: playbackRateKey, progressKey: progressKey, onPlaybackEnded: onPlaybackEnded)
     }
     
     // 新增：当视图被销毁时，确保最后的播放记录被保存
@@ -126,15 +127,17 @@ struct YouTubePlayerView: UIViewRepresentable {
         let videoTitle: String
         let playbackRateKey: String
         let progressKey: String
+        var onPlaybackEnded: ((PlaybackRecord) -> Void)?
         
         private var playbackStartTime: Date?
 
-        init(_ parent: YouTubePlayerView, videoID: String, videoTitle: String, playbackRateKey: String, progressKey: String) {
+        init(_ parent: YouTubePlayerView, videoID: String, videoTitle: String, playbackRateKey: String, progressKey: String, onPlaybackEnded: ((PlaybackRecord) -> Void)?) {
             self.parent = parent
             self.videoID = videoID
             self.videoTitle = videoTitle
             self.playbackRateKey = playbackRateKey
             self.progressKey = progressKey
+            self.onPlaybackEnded = onPlaybackEnded
         }
         
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -179,7 +182,7 @@ struct YouTubePlayerView: UIViewRepresentable {
                     startTime: startTime,
                     endTime: endTime
                 )
-                PlaybackHistoryManager.shared.addRecord(record)
+                onPlaybackEnded?(record) // 调用回调闭包
             }
             // 重置开始时间，为下一次播放做准备
             playbackStartTime = nil

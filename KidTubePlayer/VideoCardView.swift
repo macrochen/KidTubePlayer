@@ -39,32 +39,18 @@ struct VideoCardView: View {
                 }
             }
             
-            // --- 视频信息部分 (保持不变) ---
-            HStack(alignment: .top, spacing: 12) {
-                AsyncImage(url: video.authorAvatarURL) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 40, height: 40)
-                        .clipShape(Circle())
-                } placeholder: {
-                    Image(systemName: "person.crop.circle.fill")
-                        .font(.system(size: 40))
-                        .foregroundColor(.gray)
-                }
+            // --- 视频信息部分 ---
+            VStack(alignment: .leading, spacing: 4) {
+                Text(video.title)
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .lineLimit(2)
+                    .foregroundColor(.primary)
                 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(video.title)
-                        .font(.headline)
-                        .fontWeight(.semibold)
-                        .lineLimit(2)
-                        .foregroundColor(.primary)
-                    
-                    Text("\(video.author) • \(video.viewCount.formattedString) 次观看 • \(video.uploadDate.timeAgoDisplay())")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                }
+                Text("\(video.author) • \(video.viewCount.formattedString) 次观看 • \(video.uploadDate.timeAgoDisplay())")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
             }
         }
         .padding()
@@ -113,7 +99,8 @@ extension Date {
 
 struct VideoCardView_Previews: PreviewProvider {
     static var previews: some View {
-        VideoCardView(video: VideoProvider.allVideos.first!)
+        let sampleVideo = Video(id: "sampleID", platform: .youtube, title: "Sample Video Title", author: "Sample Author", viewCount: 1000, uploadDate: Date(), authorAvatarURL: nil, thumbnailURL: URL(string: "https://i.ytimg.com/vi/K-N_s5Yd2Yc/hqdefault.jpg"))
+        VideoCardView(video: sampleVideo)
             .previewLayout(.fixed(width: 350, height: 300))
             .padding()
     }

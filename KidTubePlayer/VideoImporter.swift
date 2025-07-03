@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import SwiftData
 
 // 定义一个结构体来封装导入操作的结果
 struct ImportResult: Identifiable, Equatable {
@@ -10,16 +11,39 @@ struct ImportResult: Identifiable, Equatable {
     let errorMessage: String?
 }
 
+// 用于从 JSON 解码的临时结构体
+struct VideoImportData: Decodable {
+    let id: String
+    let platform: Platform? // Make it optional for backward compatibility
+    let title: String
+    let author: String?
+    let viewCount: Int?
+    let uploadDate: Date?
+    let authorAvatarURL: URL?
+    let thumbnailURL: URL?
+
+    enum CodingKeys: String, CodingKey {
+        case id, platform, title, author, viewCount, uploadDate, authorAvatarURL, thumbnailURL
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        platform = try container.decodeIfPresent(Platform.self, forKey: .platform)
+        title = try container.decode(String.self, forKey: .title)
+        author = try container.decodeIfPresent(String.self, forKey: .author)
+        viewCount = try container.decodeIfPresent(Int.self, forKey: .viewCount)
+        uploadDate = try container.decodeIfPresent(Date.self, forKey: .uploadDate)
+        authorAvatarURL = try container.decodeIfPresent(URL.self, forKey: .authorAvatarURL)
+        thumbnailURL = try container.decodeIfPresent(URL.self, forKey: .thumbnailURL)
+    }
+}
+
 class VideoImporter: ObservableObject {
-    @Published var videos: [Video] = []
     @Published var importResult: ImportResult?
 
-    private let storageURL: URL
-
     init() {
-        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        storageURL = documentsDirectory.appendingPathComponent("videos.json")
-        loadVideos()
+        // No longer loading from JSON file
     }
 
     // 创建一个自定义的日期格式化器
@@ -33,32 +57,7 @@ class VideoImporter: ObservableObject {
         return formatter
     }
 
-    private func loadVideos() {
-        do {
-            let data = try Data(contentsOf: storageURL)
-            let decoder = JSONDecoder()
-            // 加载本地文件时也使用自定义的日期格式
-            decoder.dateDecodingStrategy = .formatted(dateFormatter)
-            videos = try decoder.decode([Video].self, from: data)
-        } catch {
-            print("Could not load videos, starting fresh: \(error)")
-            videos = []
-        }
-    }
-
-    private func saveVideos() {
-        do {
-            let encoder = JSONEncoder()
-            // 保存时也使用同样的日期格式
-            encoder.dateEncodingStrategy = .formatted(dateFormatter)
-            let data = try encoder.encode(videos)
-            try data.write(to: storageURL, options: .atomic)
-        } catch {
-            print("Error saving videos: \(error)")
-        }
-    }
-
-    func importVideos(from url: URL) {
+    func importVideos(from url: URL, modelContext: ModelContext) {
         let shouldStopAccessing = url.startAccessingSecurityScopedResource()
         defer {
             if shouldStopAccessing {
@@ -73,30 +72,47 @@ class VideoImporter: ObservableObject {
             // 关键：告诉解码器使用我们自定义的日期格式化器
             decoder.dateDecodingStrategy = .formatted(dateFormatter)
 
-            let importedVideos = try decoder.decode([Video].self, from: data)
+            let importedVideosData = try decoder.decode([VideoImportData].self, from: data)
+            
+            var successCount = 0
+            var duplicateCount = 0
+            
+            for videoData in importedVideosData {
+                let videoIDToSearch = videoData.id // Capture the ID as a local constant
+                let descriptor = FetchDescriptor<Video>(predicate: #Predicate { $0.id == videoIDToSearch })
+                let existingVideos = try modelContext.fetch(descriptor)
+                
+                if existingVideos.isEmpty {
+                    // Create a SwiftData Video object from VideoImportData
+                    let newVideo = Video(
+                        id: videoData.id,
+                        platform: videoData.platform ?? .youtube, // Default to .youtube if not present
+                        title: videoData.title,
+                        author: videoData.author ?? "未知作者",
+                        viewCount: videoData.viewCount ?? 0,
+                        uploadDate: videoData.uploadDate ?? Date(),
+                        authorAvatarURL: videoData.authorAvatarURL,
+                        thumbnailURL: videoData.thumbnailURL
+                    )
+                    modelContext.insert(newVideo)
+                    successCount += 1
+                } else {
+                    duplicateCount += 1
+                }
+            }
+            try modelContext.save() // Explicitly save changes after import
             
             DispatchQueue.main.async {
-                let existingIds = Set(self.videos.map { $0.id })
-                
-                let newVideos = importedVideos.filter { !existingIds.contains($0.id) }
-                let newVideosCount = newVideos.count
-                
-                self.videos.append(contentsOf: newVideos)
-                
-                if newVideosCount > 0 {
-                    self.saveVideos()
-                }
-
-                // 创建一个成功的导入结果
                 self.importResult = ImportResult(
-                    successCount: newVideosCount,
-                    duplicateCount: importedVideos.count - newVideosCount,
-                    totalInFile: importedVideos.count,
+                    successCount: successCount,
+                    duplicateCount: duplicateCount,
+                    totalInFile: importedVideosData.count,
                     errorMessage: nil
                 )
             }
         } catch {
-            // 如果发生任何错误，创建一个失败的导入结果
+            print("ERROR: Video import failed: \(error.localizedDescription)")
+            // If any error occurs during import or save
             DispatchQueue.main.async {
                 self.importResult = ImportResult(
                     successCount: 0,
@@ -108,8 +124,15 @@ class VideoImporter: ObservableObject {
         }
     }
     
-    func deleteVideos(with ids: Set<String>) {
-        videos.removeAll { ids.contains($0.id) }
-        saveVideos()
+    func deleteVideos(with ids: Set<String>, modelContext: ModelContext) {
+        let descriptor = FetchDescriptor<Video>(predicate: #Predicate { ids.contains($0.id) })
+        do {
+            let videosToDelete = try modelContext.fetch(descriptor)
+            for video in videosToDelete {
+                modelContext.delete(video)
+            }
+        } catch {
+            print("Error deleting videos: \(error)")
+        }
     }
 }

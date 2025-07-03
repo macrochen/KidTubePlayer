@@ -1,7 +1,9 @@
 import SwiftUI
+import SwiftData
 
 struct PlayerView: View {
     @Environment(\.presentationMode) var presentationMode
+    @Environment(\.modelContext) private var modelContext
     
     @StateObject var viewModel: PlayerViewModel
     
@@ -20,7 +22,9 @@ struct PlayerView: View {
                     )
                     .id(viewModel.currentPage)
                 } else {
-                    YouTubePlayerView(videoID: viewModel.video.id, videoTitle: viewModel.video.title)
+                    YouTubePlayerView(videoID: viewModel.video.id, videoTitle: viewModel.video.title) { record in
+                        modelContext.insert(record)
+                    }
                 }
             }
             
@@ -71,7 +75,7 @@ struct PlayerView: View {
                     startTime: startTime,
                     endTime: endTime
                 )
-                PlaybackHistoryManager.shared.addRecord(record)
+                modelContext.insert(record)
             }
             bilibiliPlaybackStartTime = nil
         }
@@ -82,7 +86,8 @@ struct PlayerView: View {
 // 预览代码保持不变
 struct PlayerView_Previews: PreviewProvider {
     static var previews: some View {
-        let sampleVideo = VideoProvider.allVideos.first!
+        // 预览时使用一个示例 Video 对象
+        let sampleVideo = Video(id: "sampleID", platform: .youtube, title: "Sample Video Title", author: "Sample Author", viewCount: 1000, uploadDate: Date(), authorAvatarURL: nil, thumbnailURL: nil)
         let viewModel = PlayerViewModel(singleVideo: sampleVideo)
         
         PlayerView(viewModel: viewModel)

@@ -1,15 +1,20 @@
 
 import SwiftUI
+import SwiftData
 
 struct VideoListView: View {
-    @StateObject private var videoImporter = VideoImporter()
-    @StateObject private var appSettings = AppSettings() // 管理家长模式状态
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \Video.title) var videos: [Video]
     
-    @State private var isImporting = false
+    @StateObject private var appSettings = AppSettings() // 管理家长模式状态
+    @StateObject private var videoImporter = VideoImporter() // Re-add VideoImporter
+    
+    @State private var isImporting = false // Re-add isImporting state
+    @State private var isShowingImportResult = false // Re-add isShowingImportResult state
+    
     @State private var editMode: EditMode = .inactive
     @State private var selectedVideoIds: Set<String> = []
     @State private var isShowingDeleteConfirmation = false
-    @State private var isShowingImportResult = false
     
     // 控制密码输入页面的显示
     @State private var isShowingParentalGate = false
@@ -20,11 +25,11 @@ struct VideoListView: View {
                 VStack(alignment: .leading, spacing: 30) {
                     HeaderView()
                     
-                    if videoImporter.videos.isEmpty {
+                    if videos.isEmpty {
                         EmptyStateView()
                     } else {
                         VideoGridView(
-                            videoImporter: videoImporter,
+                            videos: videos,
                             selectedVideoIds: $selectedVideoIds,
                             editMode: $editMode
                         )
@@ -42,9 +47,9 @@ struct VideoListView: View {
                     kidToolbar
                 }
             }
-            .sheet(isPresented: $isImporting) {
+            .sheet(isPresented: $isImporting) { // Re-add sheet for DocumentPicker
                 DocumentPicker { url in
-                    videoImporter.importVideos(from: url)
+                    videoImporter.importVideos(from: url, modelContext: modelContext)
                 }
             }
             // 新增：显示密码输入页面的 sheet
@@ -58,7 +63,7 @@ struct VideoListView: View {
             } message: {
                 Text("你确定要删除选中的视频吗？")
             }
-            .onChange(of: videoImporter.importResult) { _, newValue in
+            .onChange(of: videoImporter.importResult) { _, newValue in // Re-add onChange for importResult
                 if newValue != nil {
                     isShowingImportResult = true
                 }
@@ -106,7 +111,7 @@ struct VideoListView: View {
                         Text("播放历史")
                     }
                     
-                    Button("导入") { isImporting = true }
+                    Button("导入") { isImporting = true } // Re-add Import button
                     
                     if editMode.isEditing {
                         Button("完成") {
@@ -141,11 +146,16 @@ struct VideoListView: View {
     }
 
     private func deleteSelectedVideos() {
-        videoImporter.deleteVideos(with: selectedVideoIds)
+        for id in selectedVideoIds {
+            if let videoToDelete = videos.first(where: { $0.id == id }) {
+                modelContext.delete(videoToDelete)
+            }
+        }
         selectedVideoIds.removeAll()
         editMode = .inactive
     }
     
+    // Re-add importAlertMessage function
     private func importAlertMessage(for result: ImportResult) -> String {
         if let errorMessage = result.errorMessage {
             return errorMessage
@@ -184,7 +194,7 @@ struct EmptyStateView: View {
 }
 
 struct VideoGridView: View {
-    @ObservedObject var videoImporter: VideoImporter
+    var videos: [Video]
     @Binding var selectedVideoIds: Set<String>
     @Binding var editMode: EditMode
 
@@ -197,7 +207,7 @@ struct VideoGridView: View {
 
     var body: some View {
         LazyVGrid(columns: columns, spacing: 40) {
-            ForEach(videoImporter.videos) { video in
+            ForEach(videos) { video in
                 if editMode.isEditing {
                     VideoCardView(video: video, isSelected: selectedVideoIds.contains(video.id))
                         .onTapGesture {
