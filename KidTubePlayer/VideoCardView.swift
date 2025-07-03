@@ -63,7 +63,7 @@ struct PlatformIconView: View {
     
     var body: some View {
         // 根据平台显示不同的图标和颜色
-        Image(platform == .youtube ? "play.tv.fill" : "play.rectangle.on.rectangle.fill")
+        Image(systemName: platform == .youtube ? "play.tv.fill" : "play.rectangle.on.rectangle.fill")
             .symbolRenderingMode(.palette)
             .foregroundStyle(
                 .white,
@@ -71,7 +71,7 @@ struct PlatformIconView: View {
             )
             .font(.title3)
             .padding(6)
-            .background(.black.opacity(0.6))
+            .background(.clear) 
             .clipShape(Circle())
     }
 }
