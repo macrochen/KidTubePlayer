@@ -1,10 +1,12 @@
-// --- 全局状态管理 ---
+// content.js
+
+// --- Global State Management ---
 let selectionModeActive = false;
 let selectedVideos = [];
 let currentPlatform = '';
 
-// --- 初始化 ---
-// 判断当前在哪个平台
+// --- Initialization ---
+// Determine the current platform (YouTube or Bilibili)
 if (window.location.hostname.includes('youtube.com')) {
     currentPlatform = 'youtube';
 } else if (window.location.hostname.includes('bilibili.com')) {
@@ -12,26 +14,31 @@ if (window.location.hostname.includes('youtube.com')) {
 }
 
 /**
- * 主切换函数，用于开启或关闭选择模式
+ * Main toggle function to activate or deactivate selection mode.
  */
 function toggleApp() {
   selectionModeActive = !selectionModeActive;
   if (selectionModeActive) {
-    console.log(`Importer: 激活选择模式 on ${currentPlatform}`);
+    console.log(`Importer: Activating selection mode on ${currentPlatform}`);
     createAppUI();
     scanForVideos();
     observeDOMChanges();
   } else {
-    console.log("Importer: 关闭选择模式");
+    console.log("Importer: Deactivating selection mode");
     destroyAppUI();
     if (observer) observer.disconnect();
   }
 }
 
-window.toggleApp = toggleApp;
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log("Content: Received message:", request.action, "from sender:", sender);
+  if (request.action === "toggleSelectionMode") {
+    toggleApp();
+  }
+});
 
 /**
- * 创建插件的用户界面
+ * Creates the plugin's user interface.
  */
 function createAppUI() {
   if (document.getElementById('importer-panel')) return;
@@ -56,7 +63,7 @@ function createAppUI() {
 }
 
 /**
- * 销毁插件的UI
+ * Destroys the plugin's UI.
  */
 function destroyAppUI() {
   document.getElementById('importer-panel')?.remove();
@@ -64,17 +71,17 @@ function destroyAppUI() {
 }
 
 /**
- * 扫描页面上的视频
+ * Scans for videos on the page.
  */
 function scanForVideos() {
     const selector = currentPlatform === 'youtube'
         ? 'ytd-rich-item-renderer, ytd-video-renderer, ytd-grid-video-renderer'
-        : '.bili-video-card'; // Bilibili 的视频卡片选择器
+        : '.bili-video-card'; // Bilibili video card selector
     document.querySelectorAll(selector).forEach(videoEl => addPlusButton(videoEl));
 }
 
-/**
- * 为单个视频元素添加“+ 添加”按钮
+  /**
+ * Adds a "+ Add" button to a single video element.
  */
 function addPlusButton(videoEl) {
   if (videoEl.querySelector('.importer-add-btn')) return;
@@ -89,25 +96,58 @@ function addPlusButton(videoEl) {
   if (thumbnailContainer) {
     thumbnailContainer.style.position = 'relative';
     thumbnailContainer.appendChild(btn);
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', async (e) => {
       e.preventDefault();
       e.stopPropagation();
       const videoData = extractVideoData(videoEl);
-      if (videoData) {
-        addVideoToList(videoData);
-        btn.textContent = '✓ 已添加';
-        btn.classList.add('added');
-        btn.disabled = true;
-      } else {
+
+      if (!videoData) {
         btn.textContent = '信息不全';
         btn.classList.add('error');
+        console.error("Content: Video data extraction failed.");
+        return;
+      }
+
+      btn.textContent = '下载字幕...';
+      btn.disabled = true;
+      btn.classList.add('loading');
+
+      try {
+        if (videoData.platform === 'youtube') {
+          console.log(`Content: Sending message to background to fetch transcript for ${videoData.id}`);
+          const response = await chrome.runtime.sendMessage({ action: "fetchTranscript", videoId: videoData.id });
+          if (response.success) {
+            videoData.fullSubtitleText = response.data;
+            console.log(`Content: Subtitle fetched successfully for ${videoData.id}`);
+          } else {
+            console.error("Content: Received error from background:", response.error);
+            throw new Error(response.error || "Unknown error fetching transcript from background");
+          }
+        } else {
+          // For Bilibili or other platforms, we assume no subtitles for now.
+          videoData.fullSubtitleText = "";
+        }
+        
+        addVideoToList(videoData);
+        btn.textContent = '✓ 已添加';
+        btn.classList.remove('loading');
+        btn.classList.add('added');
+        // The button remains disabled after successfully adding.
+
+      } catch (error) {
+        console.error(`Content: Final error for ${videoData.id}:`, error);
+        btn.textContent = '获取失败'; // Update UI to show failure
+        btn.classList.remove('loading');
+        btn.classList.add('error');
+        btn.disabled = false; // Re-enable the button to allow retrying
       }
     });
   }
 }
+        
 
 /**
- * 数据提取的“总管”函数
+ * Data extraction "manager" function.
  */
 function extractVideoData(videoEl) {
     if (currentPlatform === 'youtube') {
@@ -119,7 +159,7 @@ function extractVideoData(videoEl) {
 }
 
 /**
- * 提取 YouTube 视频数据
+ * Extracts YouTube video data.
  */
 function extractYouTubeVideoData(videoEl) {
     try {
@@ -138,7 +178,7 @@ function extractYouTubeVideoData(videoEl) {
 }
 
 /**
- * 提取 Bilibili 视频数据
+ * Extracts Bilibili video data.
  */
 function extractBilibiliVideoData(videoEl) {
     try {
@@ -164,7 +204,7 @@ function addVideoToList(videoData) {
 function removeVideoFromList(videoId, platform) {
     selectedVideos = selectedVideos.filter(v => !(v.id === videoId && v.platform === platform));
     updateListView();
-    // ... (恢复按钮的逻辑也需要更新以考虑平台)
+    // ... (logic to re-enable the add button for this video if needed)
 }
 
 function updateListView() {
@@ -177,7 +217,8 @@ function updateListView() {
   if (selectedVideos.length === 0) {
     listEl.innerHTML = '<p class="empty-state">尚未选择任何视频</p>';
     exportBtn.classList.add('disabled');
-  } else {
+  }
+  else {
     listEl.innerHTML = selectedVideos.map(v => `
       <div class="list-item" data-id="${v.id}" data-platform="${v.platform}">
         <span class="platform-icon ${v.platform}">${v.platform.charAt(0).toUpperCase()}</span>
@@ -211,7 +252,7 @@ function exportJSON() {
 }
 
 
-// --- 辅助函数 ---
+// --- Helper Functions ---
 function cleanURL(url) {
     if (!url) return null;
     return url.startsWith('//') ? 'https:' + url : url;
@@ -245,7 +286,7 @@ function parseDate(text) {
     return now.toISOString();
 }
 
-// --- DOM 变动监听 ---
+// --- DOM Mutation Observer ---
 let observer;
 function observeDOMChanges() {
   observer = new MutationObserver(mutations => {
@@ -256,7 +297,7 @@ function observeDOMChanges() {
     });
   });
 
-  observer.observe(document.body, {
+  observer.observe(document.body, { 
     childList: true,
     subtree: true,
   });

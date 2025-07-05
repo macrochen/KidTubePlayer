@@ -111,6 +111,21 @@ struct VideoListView: View {
                         Text("播放历史")
                     }
                     
+                    NavigationLink(destination: MasterVocabularyView()) {
+                        Image(systemName: "book.closed.fill")
+                        Text("我的生词本")
+                    }
+                    
+                    NavigationLink(destination: APISettingsView()) {
+                        Image(systemName: "key.fill")
+                        Text("API 设置")
+                    }
+                    
+                    NavigationLink(destination: StopWordsSettingsView()) {
+                        Image(systemName: "text.book.closed")
+                        Text("停用词设置")
+                    }
+                    
                     Button("导入") { isImporting = true } // Re-add Import button
                     
                     if editMode.isEditing {

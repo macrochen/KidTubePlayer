@@ -27,4 +27,7 @@ final class Video {
         self.authorAvatarURL = authorAvatarURL
         self.thumbnailURL = thumbnailURL
     }
+
+    @Relationship(deleteRule: .cascade, inverse: \VideoVocabulary.video)
+    var videoVocabularies: [VideoVocabulary]?
 }

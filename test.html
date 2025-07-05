@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Data API v3 - 获取字幕内容</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f4; }
+        .container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="password"] {
+            width: calc(100% - 22px); padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;
+        }
+        button { display: block; width: 100%; padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; transition: background-color 0.3s ease; margin-top: 10px;}
+        button:hover { background-color: #0056b3; }
+        #tracksOutput { margin-top: 20px; padding: 15px; background-color: #e9ecef; border-radius: 4px; max-height: 400px; overflow-y: auto; }
+        .track-item { margin-bottom: 10px; padding: 10px; background-color: #fff; border: 1px solid #ddd; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .track-info { flex-grow: 1; margin-right: 10px; }
+        .track-lang { font-weight: bold; }
+        .error { color: #dc3545; font-weight: bold; }
+        #subtitlesContent { margin-top: 20px; padding: 15px; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; }
+        .subtitle-line { margin-bottom: 8px; }
+        .subtitle-timestamp { color: #6c757d; font-size: 0.8em; margin-right: 8px; }
+    </style>
+
+    <script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gapi/client.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>YouTube Data API v3 - 获取字幕内容</h1>
+
+        <label for="videoIdInput">YouTube 视频 ID:</label>
+        <input type="text" id="videoIdInput" placeholder="例如: dQw4w9WgXcQ">
+
+        <label for="apiKeyInput">YouTube Data API v3 密钥:</label>
+        <input type="password" id="apiKeyInput" placeholder="您的 API 密钥">
+
+        <button id="fetchButton">1. 查询字幕轨道</button>
+
+        <div id="tracksOutput">
+            <!-- 字幕轨道信息将显示在这里 -->
+        </div>
+
+        <div id="errorOutput">
+            <!-- 错误信息将显示在这里 -->
+        </div>
+
+        <div id="subtitlesContent" style="display: none;">
+            <h2>字幕内容:</h2>
+            <!-- 字幕内容将显示在这里 -->
+        </div>
+    </div>
+
+    <script>
+
+
+        // 需要配置 Google API Client ID
+        const CLIENT_ID = '336433447993-cfclq44ueq81t20kqdfmlngumg24agr2.apps.googleusercontent.com'; // 从 Google Cloud Console 获取
+        const API_KEY = 'AIzaSyBV53LPGA658uYHLbXdKLZZy4dmma1iUBE'; // 用于 captions.list
+        const SCOPES = ['https://www.googleapis.com/auth/youtube.force-ssl-edit', 'https://www.googleapis.com/auth/youtube.readonly']; // 需要的权限
+
+        function handleAuthClick(captionId) {
+            gapi.load('client:auth2', () => {
+                gapi.client.init({
+                    apiKey: API_KEY, // 也可以在这里传入 API key
+                    clientId: CLIENT_ID,
+                    scope: SCOPES.join(' '),
+                    discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/youtube/v3/rest"]
+                }).then(() => {
+                    // 检查用户是否已登录
+                    if (gapi.auth2.getAuthInstance().isSignedIn.get()) {
+                        // 用户已登录，可以继续操作
+                        downloadCaptionWithAuth(captionId);
+                    } else {
+                        // 请求用户授权
+                        gapi.auth2.getAuthInstance().signIn().then(() => {
+                            downloadCaptionWithAuth(captionId);
+                        }).catch(error => {
+                            console.error("用户授权失败:", error);
+                            errorOutputDiv.innerHTML = `<p class="error">用户授权失败: ${error.message}</p>`;
+                        });
+                    }
+                });
+            });
+        }
+
+        async function downloadCaptionWithAuth(captionId) {
+            try {
+                const accessToken = gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token;
+                if (!accessToken) {
+                    throw new Error("未获取到访问令牌");
+                }
+
+                const videoId = videoIdInput.value.trim(); // Assuming videoId is available
+                const format = 'srt';
+
+                // construct the URL for captions.download using the access token
+                const downloadUrl = `https://www.googleapis.com/youtube/v3/captions/${captionId}?key=${API_KEY}&tfmt=${format}`; // Key here might not be needed if token is sufficient, but often good practice to include. Test this.
+
+                const response = await fetch(downloadUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json' // Often needed for API calls
+                    }
+                });
+
+                // ... rest of your download and display logic ...
+                if (!response.ok) {
+                    // Handle errors, potentially using the access token to re-authenticate if expired
+                    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+                }
+                const subtitleText = await response.text();
+                displaySrtContent(subtitleText);
+
+            } catch (error) {
+                console.error("下载字幕时出错 (使用OAuth):", error);
+                errorOutputDiv.innerHTML = `<p class="error">下载字幕时出错: ${error.message}</p>`;
+            }
+        }
+
+
+
+
+        const videoIdInput = document.getElementById('videoIdInput');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const fetchTracksButton = document.getElementById('fetchButton'); // Renamed button for clarity
+        const tracksOutputDiv = document.getElementById('tracksOutput');
+        const errorOutputDiv = document.getElementById('errorOutput');
+        const subtitlesContentDiv = document.getElementById('subtitlesContent');
+
+        fetchTracksButton.addEventListener('click', async () => {
+            const videoId = videoIdInput.value.trim();
+            const apiKey = apiKeyInput.value.trim();
+
+            tracksOutputDiv.innerHTML = ''; // Clear previous tracks
+            errorOutputDiv.innerHTML = ''; // Clear previous errors
+            subtitlesContentDiv.innerHTML = '<h2>字幕内容:</h2>'; // Reset subtitles display
+            subtitlesContentDiv.style.display = 'none';
+
+            if (!videoId) {
+                errorOutputDiv.innerHTML = '<p class="error">请输入 YouTube 视频 ID！</p>';
+                return;
+            }
+            if (!apiKey) {
+                errorOutputDiv.innerHTML = '<p class="error">请输入您的 YouTube Data API v3 密钥！</p>';
+                return;
+            }
+
+            // --- Phase 1: Fetch Caption Tracks ---
+            const tracksApiUrl = `https://www.googleapis.com/youtube/v3/captions?part=snippet&videoId=${videoId}&key=${apiKey}`;
+
+            try {
+                const response = await fetch(tracksApiUrl);
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: { message: 'Unknown API error' } }));
+                    let errorMessage = `API 请求失败: ${response.status} - ${response.statusText}`;
+                    if (errorData && errorData.error && errorData.error.message) {
+                        errorMessage = `API 错误: ${errorData.error.message}`;
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                const data = await response.json();
+                const tracks = data.items;
+
+                if (!tracks || tracks.length === 0) {
+                    tracksOutputDiv.innerHTML = '<p>未找到该视频的字幕轨道。</p>';
+                    return;
+                }
+
+                // Render caption tracks and add a button to download each
+                tracks.forEach(track => {
+                    const trackElement = document.createElement('div');
+                    trackElement.classList.add('track-item');
+
+                    const trackInfoSpan = document.createElement('span');
+                    trackInfoSpan.classList.add('track-info');
+
+                    const captionName = track.snippet.name && track.snippet.name.simpleText ?
+                                        `${track.snippet.name.simpleText} (${track.snippet.language})` :
+                                        track.snippet.language;
+
+                    trackInfoSpan.textContent = `[${captionName}] - 类型: ${track.snippet.isAutoSynced ? '自动生成' : '人工'} `;
+                    trackElement.appendChild(trackInfoSpan);
+                    
+                    // Create a button to download this specific caption
+                    const downloadButton = document.createElement('button');
+                    downloadButton.textContent = '下载字幕';
+                    downloadButton.onclick = async () => {
+                        await handleAuthClick(track.id); // Pass trackId and language
+                    };
+                    trackElement.appendChild(downloadButton);
+
+                    tracksOutputDiv.appendChild(trackElement);
+                });
+
+            } catch (error) {
+                console.error("抓取字幕轨道时出错:", error);
+                errorOutputDiv.innerHTML = `<p class="error">查询字幕轨道时发生错误: ${error.message}</p>`;
+            }
+        });
+
+
+        // Helper function to parse and display SRT content
+        function displaySrtContent(srtContent) {
+            const subtitleLines = srtContent.split('\n\n'); // SRT is typically separated by double newlines
+            const contentHtml = subtitleLines.map(line => {
+                if (!line.trim()) return ''; // Skip empty lines
+
+                const parts = line.split('\n');
+                if (parts.length >= 3) { // SRT format: index, timestamp, text
+                    const index = parts[0];
+                    const timestamp = parts[1];
+                    const text = parts.slice(2).join('\n'); // Text can span multiple lines
+
+                    return `
+                        <div class="subtitle-line">
+                            <span class="subtitle-timestamp">${timestamp}</span>
+                            <div>${text}</div>
+                        </div>
+                    `;
+                } else {
+                    return `<div class="subtitle-line">${line.replace(/\n/g, '<br>')}</div>`; // Fallback for unexpected format
+                }
+            }).join(''); // Join all parsed subtitle lines
+
+            subtitlesContentDiv.innerHTML = `<h2>字幕内容:</h2>${contentHtml}`;
+        }
+    </script>
+
+</body>
+</html>

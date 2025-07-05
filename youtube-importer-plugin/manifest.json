@@ -1,15 +1,16 @@
 {
   "manifest_version": 3,
   "name": "视频列表制作插件",
-  "version": "1.1",
+  "version": "2.0",
   "description": "在 YouTube 和 Bilibili 上轻松选择视频并导出为 JSON 列表。",
   "permissions": [
     "storage",
     "activeTab",
+    "tabs",
     "scripting"
   ],
   "host_permissions": [
-    "*://www.youtube.com/*",
+    "*://*.youtube.com/*",
     "*://*.bilibili.com/*"
   ],
   "action": {
@@ -20,9 +21,15 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://www.youtube.com/*", "*://*.bilibili.com/*"],
+      "matches": ["*://*.youtube.com/*", "*://*.bilibili.com/*"],
       "css": ["style.css"],
       "js": ["content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["youtube-main-world-script.js"],
+      "matches": ["*://*.youtube.com/*"]
     }
   ],
   "icons": {

@@ -14,7 +14,7 @@ struct KidTubePlayerApp: App {
 
     init() {
         do {
-            let schema = Schema([Video.self, PlaybackRecord.self])
+            let schema = Schema([Video.self, PlaybackRecord.self, VocabularyWord.self, VideoVocabulary.self])
             let modelConfiguration = ModelConfiguration(schema: schema, url: URL.applicationSupportDirectory.appending(path: "KidTubePlayer.sqlite"))
             sharedModelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
