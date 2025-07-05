@@ -16,8 +16,9 @@ final class Video {
     var uploadDate: Date
     var authorAvatarURL: URL?
     var thumbnailURL: URL?
+    var fullSubtitleText: String?
 
-    init(id: String, platform: Platform, title: String, author: String, viewCount: Int, uploadDate: Date, authorAvatarURL: URL?, thumbnailURL: URL?) {
+    init(id: String, platform: Platform, title: String, author: String, viewCount: Int, uploadDate: Date, authorAvatarURL: URL?, thumbnailURL: URL?, fullSubtitleText: String? = nil) {
         self.id = id
         self.platform = platform
         self.title = title
@@ -26,8 +27,10 @@ final class Video {
         self.uploadDate = uploadDate
         self.authorAvatarURL = authorAvatarURL
         self.thumbnailURL = thumbnailURL
+        self.fullSubtitleText = fullSubtitleText
     }
 
-    @Relationship(deleteRule: .cascade, inverse: \VideoVocabulary.video)
-    var videoVocabularies: [VideoVocabulary]?
+    
+
+    static let youtubePlatform: Platform = .youtube
 }

@@ -17,7 +17,7 @@ struct VideoListView: View {
     @State private var isShowingDeleteConfirmation = false
     
     // 控制密码输入页面的显示
-    @State private var isShowingParentalGate = false
+    // @State private var isShowingParentalGate = false
 
     var body: some View {
         NavigationStack {
@@ -41,11 +41,11 @@ struct VideoListView: View {
             .ignoresSafeArea()
             .toolbar {
                 // 根据是否解锁家长模式，显示不同的工具栏
-                if appSettings.isParentalModeUnlocked {
+                // if appSettings.isParentalModeUnlocked {
                     parentalToolbar
-                } else {
-                    kidToolbar
-                }
+                // } else {
+                //    kidToolbar
+                // }
             }
             .sheet(isPresented: $isImporting) { // Re-add sheet for DocumentPicker
                 DocumentPicker { url in
@@ -53,10 +53,10 @@ struct VideoListView: View {
                 }
             }
             // 新增：显示密码输入页面的 sheet
-            .sheet(isPresented: $isShowingParentalGate) {
-                ParentalGateView(mode: UserSettings.isPasswordSet ? .unlock : .setup)
-                    .environmentObject(appSettings)
-            }
+            // .sheet(isPresented: $isShowingParentalGate) {
+            //    ParentalGateView(mode: UserSettings.isPasswordSet ? .unlock : .setup)
+            //        .environmentObject(appSettings)
+            // }
             .alert("删除视频", isPresented: $isShowingDeleteConfirmation) {
                 Button("删除", role: .destructive) { deleteSelectedVideos() }
                 Button("取消", role: .cancel) {}
@@ -111,21 +111,6 @@ struct VideoListView: View {
                         Text("播放历史")
                     }
                     
-                    NavigationLink(destination: MasterVocabularyView()) {
-                        Image(systemName: "book.closed.fill")
-                        Text("我的生词本")
-                    }
-                    
-                    NavigationLink(destination: APISettingsView()) {
-                        Image(systemName: "key.fill")
-                        Text("API 设置")
-                    }
-                    
-                    NavigationLink(destination: StopWordsSettingsView()) {
-                        Image(systemName: "text.book.closed")
-                        Text("停用词设置")
-                    }
-                    
                     Button("导入") { isImporting = true } // Re-add Import button
                     
                     if editMode.isEditing {
@@ -149,6 +134,7 @@ struct VideoListView: View {
     }
 
     // 普通儿童模式下的工具栏
+    /*
     private var kidToolbar: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
             Button(action: {
@@ -159,6 +145,7 @@ struct VideoListView: View {
             }
         }
     }
+    */
 
     private func deleteSelectedVideos() {
         for id in selectedVideoIds {

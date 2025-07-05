@@ -114,15 +114,19 @@ function addPlusButton(videoEl) {
 
       try {
         if (videoData.platform === 'youtube') {
-          console.log(`Content: Sending message to background to fetch transcript for ${videoData.id}`);
-          const response = await chrome.runtime.sendMessage({ action: "fetchTranscript", videoId: videoData.id });
-          if (response.success) {
-            videoData.fullSubtitleText = response.data;
-            console.log(`Content: Subtitle fetched successfully for ${videoData.id}`);
-          } else {
-            console.error("Content: Received error from background:", response.error);
-            throw new Error(response.error || "Unknown error fetching transcript from background");
-          }
+          // 字幕抓取功能已禁用。
+          // 如果需要重新启用，请取消注释以下代码块，并修改 background.js 中的相关逻辑。
+          // console.log(`Content: Sending message to background to fetch transcript for ${videoData.id}`);
+          // const response = await chrome.runtime.sendMessage({ action: "fetchTranscript", videoId: videoData.id });
+          // if (response.success) {
+          //   videoData.fullSubtitleText = response.data;
+          //   console.log(`Content: Subtitle fetched successfully for ${videoData.id}`);
+          // } else {
+          //   console.error("Content: Received error from background:", response.error);
+          //   throw new Error(response.error || "Unknown error fetching transcript from background");
+          // }
+          videoData.fullSubtitleText = ""; // 禁用字幕抓取，直接设置为空
+          console.log(`Content: Subtitle fetching is disabled. fullSubtitleText set to empty for ${videoData.id}.`);
         } else {
           // For Bilibili or other platforms, we assume no subtitles for now.
           videoData.fullSubtitleText = "";

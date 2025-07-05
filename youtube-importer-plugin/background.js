@@ -13,11 +13,13 @@ const responseCallbackMap = new Map();
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("Background: Received message:", request.action, "from sender:", sender);
 
-  if (request.action === "fetchTranscript") {
-    console.log(`Background: Handling fetchTranscript request for videoId: ${request.videoId}`);
-    handleFetchTranscriptRequest(request.videoId, sendResponse);
-    return true; // Keep message channel open for async response
-  }
+  // 字幕抓取功能已禁用。
+  // 如果需要重新启用，请取消注释以下代码块，并修改 content.js 中的相关逻辑。
+  // if (request.action === "fetchTranscript") {
+  //   console.log(`Background: Handling fetchTranscript request for videoId: ${request.videoId}`);
+  //   handleFetchTranscriptRequest(request.videoId, sendResponse);
+  //   return true; // Keep message channel open for async response
+  // }
 
   if (request.action === "transcriptResult") {
     console.log("Background: Received transcriptResult from temp-tab-content-script.", request);
