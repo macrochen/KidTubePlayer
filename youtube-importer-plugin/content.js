@@ -272,21 +272,37 @@ function parseViews(text) {
 
 function parseDate(text) {
     const now = new Date();
-    text = text.trim();
-    if (text.includes('分钟前') || text.includes('小时前') || text.includes('天前')) {
+    
+    // 检查是否是相对时间 (e.g., "X天前")
+    if (text.includes('前') || text.includes('ago')) {
+        text = text.replace('前', '').replace(' ago', '').trim();
         const value = parseInt(text) || 0;
-        if (text.includes('分钟')) now.setMinutes(now.getMinutes() - value);
-        if (text.includes('小时')) now.setHours(now.getHours() - value);
-        if (text.includes('天')) now.setDate(now.getDate() - value);
+        if (text.includes('分钟') || text.includes('minute')) {
+            now.setMinutes(now.getMinutes() - value);
+        } else if (text.includes('小时') || text.includes('hour')) {
+            now.setHours(now.getHours() - value);
+        } else if (text.includes('天') || text.includes('day')) {
+            now.setDate(now.getDate() - value);
+        } else if (text.includes('周') || text.includes('week')) {
+            now.setDate(now.getDate() - value * 7);
+        } else if (text.includes('月') || text.includes('month')) {
+            now.setMonth(now.getMonth() - value);
+        } else if (text.includes('年') || text.includes('year')) {
+            now.setFullYear(now.getFullYear() - value);
+        }
         return now.toISOString();
     }
-    const match = text.match(/(\d{4})-(\d{1,2})-(\d{1,2})|(\d{1,2})-(\d{1,2})/);
+    
+    // 检查是否是绝对日期 (e.g., "2023年10月25日")
+    const match = text.match(/(\d{4})年(\d{1,2})月(\d{1,2})日/);
     if (match) {
-        const year = parseInt(match[1] || now.getFullYear());
-        const month = parseInt(match[2] || match[4]) - 1;
-        const day = parseInt(match[3] || match[5]);
+        const year = parseInt(match[1], 10);
+        const month = parseInt(match[2], 10) - 1; // 月份是从0开始的
+        const day = parseInt(match[3], 10);
         return new Date(year, month, day).toISOString();
     }
+
+    // 如果两种格式都匹配失败，返回当前时间
     return now.toISOString();
 }
 
