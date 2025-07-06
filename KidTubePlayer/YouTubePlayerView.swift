@@ -9,6 +9,13 @@ struct YouTubePlayerView: UIViewRepresentable {
     
     private let playbackRateKey = "youtubePlaybackRate"
     private var progressKey: String { "progress-\(videoID)" }
+    
+
+    public init(videoID: String, videoTitle: String, onPlaybackEnded: ((PlaybackRecord) -> Void)?) {
+        self.videoID = videoID
+        self.videoTitle = videoTitle
+        self.onPlaybackEnded = onPlaybackEnded
+    }
 
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
@@ -81,10 +88,10 @@ struct YouTubePlayerView: UIViewRepresentable {
                     // YT.PlayerState.PAUSED = 2
                     // YT.PlayerState.ENDED = 0
                     if (event.data == 1) { // Playing
-                        window.webkit.messageHandlers.playbackSessionHandler.postMessage("start");
+                        window.webkit.messageHandlers.playbackSessionHandler.postMessage({ action: "start" });
                     } else if (event.data == 2 || event.data == 0) { // Paused or Ended
                         saveProgress();
-                        window.webkit.messageHandlers.playbackSessionHandler.postMessage("end");
+                        window.webkit.messageHandlers.playbackSessionHandler.postMessage({ action: "end" });
                     }
                 }
 
@@ -151,7 +158,7 @@ struct YouTubePlayerView: UIViewRepresentable {
                     UserDefaults.standard.set(progress, forKey: self.progressKey)
                 }
             case "playbackSessionHandler":
-                if let action = message.body as? String {
+                if let messageBody = message.body as? [String: Any], let action = messageBody["action"] as? String {
                     if action == "start" {
                         startPlaybackSession()
                     } else if action == "end" {
@@ -175,6 +182,7 @@ struct YouTubePlayerView: UIViewRepresentable {
             let endTime = Date()
             // 只有当播放时长大于一个很小的值（比如5秒）时才记录，避免意外的短记录
             if endTime.timeIntervalSince(startTime) > 5.0 {
+                let currentOffset = UserDefaults.standard.double(forKey: self.progressKey) // 从 UserDefaults 获取最新播放位置
                 let record = PlaybackRecord(
                     videoID: self.videoID,
                     videoTitle: self.videoTitle,
@@ -182,6 +190,7 @@ struct YouTubePlayerView: UIViewRepresentable {
                     startTime: startTime,
                     endTime: endTime
                 )
+                print("YouTubePlayerView: PlaybackRecord created.")
                 onPlaybackEnded?(record) // 调用回调闭包
             }
             // 重置开始时间，为下一次播放做准备

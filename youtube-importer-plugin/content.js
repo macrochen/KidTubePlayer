@@ -176,8 +176,10 @@ function extractYouTubeVideoData(videoEl) {
         const metadataSpans = videoEl.querySelectorAll('#metadata-line span');
         const viewCount = parseViews(metadataSpans[0]?.textContent || '0');
         const uploadDate = parseDate(metadataSpans[1]?.textContent || '现在');
+        const durationText = videoEl.querySelector('ytd-thumbnail-overlay-time-status-renderer span')?.textContent.trim() || '';
+        const duration = parseDuration(durationText);
 
-        return { platform: 'youtube', id: videoId, title, author, viewCount, uploadDate, authorAvatarURL, thumbnailURL };
+        return { platform: 'youtube', id: videoId, title, author, viewCount, uploadDate, authorAvatarURL, thumbnailURL, duration };
     } catch (e) { console.error("YouTube data extraction failed", e, videoEl); return null; }
 }
 
@@ -194,8 +196,10 @@ function extractBilibiliVideoData(videoEl) {
         const thumbnailURL = cleanURL(videoEl.querySelector('.bili-video-card__image img')?.src);
         const viewCount = parseViews(videoEl.querySelector('.bili-video-card__stats--item')?.textContent || '0');
         const uploadDate = parseDate(videoEl.querySelector('.bili-video-card__info--date')?.textContent || '现在');
+        const durationText = videoEl.querySelector('.bili-video-card__stats--duration')?.textContent.trim() || '';
+        const duration = parseDuration(durationText);
 
-        return { platform: 'bilibili', id: bvid, title, author, viewCount, uploadDate, authorAvatarURL, thumbnailURL };
+        return { platform: 'bilibili', id: bvid, title, author, viewCount, uploadDate, authorAvatarURL, thumbnailURL, duration };
     } catch (e) { console.error("Bilibili data extraction failed", e, videoEl); return null; }
 }
 
@@ -304,6 +308,19 @@ function parseDate(text) {
 
     // 如果两种格式都匹配失败，返回当前时间
     return now.toISOString();
+}
+
+function parseDuration(durationText) {
+    const parts = durationText.split(':').map(Number);
+    let duration = 0;
+    if (parts.length === 3) {
+        duration = parts[0] * 3600 + parts[1] * 60 + parts[2];
+    } else if (parts.length === 2) {
+        duration = parts[0] * 60 + parts[1];
+    } else if (parts.length === 1) {
+        duration = parts[0];
+    }
+    return duration;
 }
 
 // --- DOM Mutation Observer ---

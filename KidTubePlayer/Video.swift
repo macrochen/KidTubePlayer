@@ -17,8 +17,9 @@ final class Video {
     var authorAvatarURL: URL?
     var thumbnailURL: URL?
     var fullSubtitleText: String?
+    var duration: TimeInterval? // 新增：视频总时长（秒）
 
-    init(id: String, platform: Platform, title: String, author: String, viewCount: Int, uploadDate: Date, authorAvatarURL: URL?, thumbnailURL: URL?, fullSubtitleText: String? = nil) {
+    init(id: String, platform: Platform, title: String, author: String, viewCount: Int, uploadDate: Date, authorAvatarURL: URL?, thumbnailURL: URL?, fullSubtitleText: String? = nil, duration: TimeInterval? = nil) {
         self.id = id
         self.platform = platform
         self.title = title
@@ -28,6 +29,7 @@ final class Video {
         self.authorAvatarURL = authorAvatarURL
         self.thumbnailURL = thumbnailURL
         self.fullSubtitleText = fullSubtitleText
+        self.duration = duration
     }
 
     

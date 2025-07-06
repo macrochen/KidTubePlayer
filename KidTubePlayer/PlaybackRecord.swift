@@ -23,6 +23,8 @@ final class PlaybackRecord {
     /// 经过计算的播放时长（单位：秒）
     var duration: TimeInterval
     
+    
+    
     /// 记录所属的日期（方便按天分组）
     var recordDate: Date
     

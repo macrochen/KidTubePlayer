@@ -3,6 +3,7 @@ import SwiftUI
 struct VideoCardView: View {
     let video: Video
     var isSelected: Bool = false
+    var watchedPercentage: Double = 0.0 // 新增：观看百分比 (0.0 - 1.0)
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -36,6 +37,15 @@ struct VideoCardView: View {
                             .shadow(radius: 2)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                }
+                
+                // 观看进度条
+                GeometryReader {
+                    geometry in
+                    Rectangle()
+                        .fill(.red)
+                        .frame(width: geometry.size.width * watchedPercentage, height: 4) // 高度固定为4
+                        .offset(y: geometry.size.height - 4) // 放置在底部
                 }
             }
             

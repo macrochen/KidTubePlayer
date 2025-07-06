@@ -5,6 +5,7 @@ import SwiftData
 struct VideoListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Video.title) var videos: [Video]
+    @Query var playbackRecords: [PlaybackRecord] // 新增：播放记录
     
     @StateObject private var appSettings = AppSettings() // 管理家长模式状态
     @StateObject private var videoImporter = VideoImporter() // Re-add VideoImporter
@@ -18,7 +19,7 @@ struct VideoListView: View {
     
     // 控制密码输入页面的显示
     // @State private var isShowingParentalGate = false
-
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -31,7 +32,10 @@ struct VideoListView: View {
                         VideoGridView(
                             videos: videos,
                             selectedVideoIds: $selectedVideoIds,
-                            editMode: $editMode
+                            editMode: $editMode,
+                            watchedPercentageProvider: { video in
+                                watchedPercentage(for: video)
+                            }
                         )
                     }
                 }
@@ -42,7 +46,7 @@ struct VideoListView: View {
             .toolbar {
                 // 根据是否解锁家长模式，显示不同的工具栏
                 // if appSettings.isParentalModeUnlocked {
-                    parentalToolbar
+                parentalToolbar
                 // } else {
                 //    kidToolbar
                 // }
@@ -90,9 +94,9 @@ struct VideoListView: View {
             }
         }
     }
-
+    
     // MARK: - Toolbars
-
+    
     // 家长模式解锁后的工具栏
     private var parentalToolbar: some ToolbarContent {
         Group {
@@ -132,21 +136,21 @@ struct VideoListView: View {
             }
         }
     }
-
+    
     // 普通儿童模式下的工具栏
     /*
-    private var kidToolbar: some ToolbarContent {
-        ToolbarItem(placement: .navigationBarTrailing) {
-            Button(action: {
-                isShowingParentalGate = true
-            }) {
-                Image(systemName: "lock.shield")
-                    .font(.title2)
-            }
-        }
-    }
-    */
-
+     private var kidToolbar: some ToolbarContent {
+     ToolbarItem(placement: .navigationBarTrailing) {
+     Button(action: {
+     isShowingParentalGate = true
+     }) {
+     Image(systemName: "lock.shield")
+     .font(.title2)
+     }
+     }
+     }
+     */
+    
     private func deleteSelectedVideos() {
         for id in selectedVideoIds {
             if let videoToDelete = videos.first(where: { $0.id == id }) {
@@ -170,90 +174,105 @@ struct VideoListView: View {
             return message
         }
     }
-}
-
-// --- 其他子视图保持不变 ---
-
-struct EmptyStateView: View {
-    var body: some View {
-        VStack {
-            Spacer()
-            Image(systemName: "film.stack")
-                .font(.system(size: 80))
-                .foregroundColor(.gray.opacity(0.5))
-            Text("No Videos")
-                .font(.title)
-                .fontWeight(.bold)
-                .padding(.top)
-            Text("Tap 'Import' to add your first video list.")
-                .font(.headline)
-                .foregroundColor(.secondary)
-            Spacer()
+    
+    private func watchedPercentage(for video: Video) -> Double {
+        guard let videoDuration = video.duration, videoDuration > 0 else {
+            return 0.0 // 如果视频时长未知或为0，则没有观看进度
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 100)
+        
+        // 从 UserDefaults 获取最新播放位置
+        let progressKey = "progress-\(video.id)"
+        let currentOffset = UserDefaults.standard.double(forKey: progressKey)
+        
+        // 计算观看百分比，并确保不超过1.0 (100%)
+        return min(currentOffset / videoDuration, 1.0)
     }
-}
-
-struct VideoGridView: View {
-    var videos: [Video]
-    @Binding var selectedVideoIds: Set<String>
-    @Binding var editMode: EditMode
-
-    private let columns = [
-        GridItem(.flexible(), spacing: 20),
-        GridItem(.flexible(), spacing: 20),
-        GridItem(.flexible(), spacing: 20),
-        GridItem(.flexible(), spacing: 20)
-    ]
-
-    var body: some View {
-        LazyVGrid(columns: columns, spacing: 40) {
-            ForEach(videos) { video in
-                if editMode.isEditing {
-                    VideoCardView(video: video, isSelected: selectedVideoIds.contains(video.id))
-                        .onTapGesture {
-                            toggleSelection(for: video)
+    }
+    
+    // --- 其他子视图保持不变 ---
+    
+    struct EmptyStateView: View {
+        var body: some View {
+            VStack {
+                Spacer()
+                Image(systemName: "film.stack")
+                    .font(.system(size: 80))
+                    .foregroundColor(.gray.opacity(0.5))
+                Text("No Videos")
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .padding(.top)
+                Text("Tap 'Import' to add your first video list.")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 100)
+        }
+    }
+    
+    struct VideoGridView: View {
+        var videos: [Video]
+        @Binding var selectedVideoIds: Set<String>
+        @Binding var editMode: EditMode
+        var watchedPercentageProvider: (Video) -> Double // 新增：提供观看百分比的闭包
+        
+        private let columns = [
+            GridItem(.flexible(), spacing: 20),
+            GridItem(.flexible(), spacing: 20),
+            GridItem(.flexible(), spacing: 20),
+            GridItem(.flexible(), spacing: 20)
+        ]
+        
+        var body: some View {
+            LazyVGrid(columns: columns, spacing: 40) {
+                ForEach(videos) { video in
+                    if editMode.isEditing {
+                        VideoCardView(video: video, isSelected: selectedVideoIds.contains(video.id), watchedPercentage: watchedPercentageProvider(video))
+                            .onTapGesture {
+                                toggleSelection(for: video)
+                            }
+                    } else {
+                        NavigationLink(value: video) {
+                            VideoCardView(video: video, watchedPercentage: watchedPercentageProvider(video))
                         }
-                } else {
-                    NavigationLink(value: video) {
-                        VideoCardView(video: video)
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .buttonStyle(PlainButtonStyle())
                 }
             }
         }
-    }
-
-    private func toggleSelection(for video: Video) {
-        if selectedVideoIds.contains(video.id) {
-            selectedVideoIds.remove(video.id)
-        } else {
-            selectedVideoIds.insert(video.id)
-        }
-    }
-}
-
-struct HeaderView: View {
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading) {
-                Text("Welcome to KidTube!")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                Text("Your favorite Minecraft videos for learning English.")
-                    .font(.title2)
-                    .foregroundColor(.secondary)
+        
+        private func toggleSelection(for video: Video) {
+            if selectedVideoIds.contains(video.id) {
+                selectedVideoIds.remove(video.id)
+            } else {
+                selectedVideoIds.insert(video.id)
             }
-            Spacer()
         }
     }
-}
-
-struct VideoListView_Previews: PreviewProvider {
-    static var previews: some View {
-        VideoListView()
-            .previewDevice("iPad Pro (11-inch) (4th generation)")
-            .previewInterfaceOrientation(.landscapeLeft)
+    
+    struct HeaderView: View {
+        var body: some View {
+            HStack {
+                VStack(alignment: .leading) {
+                    Text("Welcome to KidTube!")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                    Text("Your favorite Minecraft videos for learning English.")
+                        .font(.title2)
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+            }
+        }
     }
-}
+    
+    struct VideoListView_Previews: PreviewProvider {
+        static var previews: some View {
+            VideoListView()
+                .previewDevice("iPad Pro (11-inch) (4th generation)")
+                .previewInterfaceOrientation(.landscapeLeft)
+        }
+    }
+

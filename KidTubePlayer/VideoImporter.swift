@@ -22,9 +22,10 @@ struct VideoImportData: Decodable {
     let authorAvatarURL: URL?
     let thumbnailURL: URL?
     let fullSubtitleText: String? // 新增：字幕文本
+    let duration: TimeInterval? // 新增：视频时长
 
     enum CodingKeys: String, CodingKey {
-        case id, platform, title, author, viewCount, uploadDate, authorAvatarURL, thumbnailURL, fullSubtitleText
+        case id, platform, title, author, viewCount, uploadDate, authorAvatarURL, thumbnailURL, fullSubtitleText, duration
     }
 
     init(from decoder: Decoder) throws {
@@ -38,6 +39,7 @@ struct VideoImportData: Decodable {
         authorAvatarURL = try container.decodeIfPresent(URL.self, forKey: .authorAvatarURL)
         thumbnailURL = try container.decodeIfPresent(URL.self, forKey: .thumbnailURL)
         fullSubtitleText = try container.decodeIfPresent(String.self, forKey: .fullSubtitleText)
+        duration = try container.decodeIfPresent(TimeInterval.self, forKey: .duration)
     }
 }
 
@@ -95,7 +97,8 @@ class VideoImporter: ObservableObject {
                         uploadDate: videoData.uploadDate ?? Date(),
                         authorAvatarURL: videoData.authorAvatarURL,
                         thumbnailURL: videoData.thumbnailURL,
-                        fullSubtitleText: videoData.fullSubtitleText // Pass fullSubtitleText
+                        fullSubtitleText: videoData.fullSubtitleText, // Pass fullSubtitleText
+                        duration: videoData.duration // Pass duration
                     )
                     modelContext.insert(newVideo)
                     successCount += 1

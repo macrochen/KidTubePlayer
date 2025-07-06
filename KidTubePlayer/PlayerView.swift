@@ -88,6 +88,7 @@ struct PlayerView: View {
                     endTime: endTime
                 )
                 modelContext.insert(record)
+                print("PlayerView (Bilibili): PlaybackRecord created.")
             }
             bilibiliPlaybackStartTime = nil
         }
