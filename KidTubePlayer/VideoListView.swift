@@ -12,13 +12,14 @@ struct VideoListView: View {
     
     @State private var isImporting = false // Re-add isImporting state
     @State private var isShowingImportResult = false // Re-add isShowingImportResult state
+    @State private var isShowingPlaybackHistory = false // New state for PlaybackHistory navigation
     
     @State private var editMode: EditMode = .inactive
     @State private var selectedVideoIds: Set<String> = []
     @State private var isShowingDeleteConfirmation = false
     
     // 控制密码输入页面的显示
-    // @State private var isShowingParentalGate = false
+    @State private var isShowingParentalGate = false
     
     var body: some View {
         NavigationStack {
@@ -44,12 +45,11 @@ struct VideoListView: View {
             .background(Color(white: 0.97))
             .ignoresSafeArea()
             .toolbar {
-                // 根据是否解锁家长模式，显示不同的工具栏
-                // if appSettings.isParentalModeUnlocked {
-                parentalToolbar
-                // } else {
-                //    kidToolbar
-                // }
+                if appSettings.isParentalModeUnlocked {
+                    parentalToolbar
+                } else {
+                    kidToolbar
+                }
             }
             .sheet(isPresented: $isImporting) { // Re-add sheet for DocumentPicker
                 DocumentPicker { url in
@@ -57,10 +57,10 @@ struct VideoListView: View {
                 }
             }
             // 新增：显示密码输入页面的 sheet
-            // .sheet(isPresented: $isShowingParentalGate) {
-            //    ParentalGateView(mode: UserSettings.isPasswordSet ? .unlock : .setup)
-            //        .environmentObject(appSettings)
-            // }
+            .sheet(isPresented: $isShowingParentalGate) {
+                ParentalGateView(mode: UserSettings.isPasswordSet ? .unlock : .setup)
+                    .environmentObject(appSettings)
+            }
             .alert("删除视频", isPresented: $isShowingDeleteConfirmation) {
                 Button("删除", role: .destructive) { deleteSelectedVideos() }
                 Button("取消", role: .cancel) {}
@@ -110,12 +110,38 @@ struct VideoListView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack {
-                    NavigationLink(destination: PlaybackHistoryView()) {
+                    Button(action: {
+                        if appSettings.isParentalModeUnlocked {
+                            // Programmatically navigate to PlaybackHistoryView
+                            // This requires a NavigationStack and a navigationDestination for PlaybackHistoryView
+                            // For now, we'll just show the gate if not unlocked.
+                            // A better approach might be to use a separate @State for navigation and trigger it here.
+                            // For simplicity, I'll assume a direct navigation is intended if unlocked.
+                            // If this causes issues, we might need to refactor navigation.
+                            // For now, I'll just make it show the gate if not unlocked.
+                            // If unlocked, it will proceed to the NavigationLink below.
+                            // This is a placeholder for actual navigation.
+                            // Since NavigationLink is declarative, we need a different approach.
+                            // Let's use a @State to control navigation.
+                            isShowingPlaybackHistory = true
+                        } else {
+                            isShowingParentalGate = true
+                        }
+                    }) {
                         Image(systemName: "clock.arrow.circlepath")
                         Text("播放历史")
                     }
+                    .navigationDestination(isPresented: $isShowingPlaybackHistory) {
+                        PlaybackHistoryView()
+                    }
                     
-                    Button("导入") { isImporting = true } // Re-add Import button
+                    Button("导入") {
+                        if appSettings.isParentalModeUnlocked {
+                            isImporting = true
+                        } else {
+                            isShowingParentalGate = true
+                        }
+                    }
                     
                     if editMode.isEditing {
                         Button("完成") {
@@ -123,7 +149,13 @@ struct VideoListView: View {
                             selectedVideoIds.removeAll()
                         }
                     } else {
-                        Button("编辑") { editMode = .active }
+                        Button("编辑") {
+                            if appSettings.isParentalModeUnlocked {
+                                editMode = .active
+                            } else {
+                                isShowingParentalGate = true
+                            }
+                        }
                     }
                     
                     if editMode.isEditing {
@@ -138,18 +170,16 @@ struct VideoListView: View {
     }
     
     // 普通儿童模式下的工具栏
-    /*
-     private var kidToolbar: some ToolbarContent {
-     ToolbarItem(placement: .navigationBarTrailing) {
-     Button(action: {
-     isShowingParentalGate = true
-     }) {
-     Image(systemName: "lock.shield")
-     .font(.title2)
-     }
-     }
-     }
-     */
+    private var kidToolbar: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            Button(action: {
+                isShowingParentalGate = true
+            }) {
+                Image(systemName: "lock.shield")
+                    .font(.title2)
+            }
+        }
+    }
     
     private func deleteSelectedVideos() {
         for id in selectedVideoIds {
