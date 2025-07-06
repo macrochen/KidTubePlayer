@@ -40,9 +40,9 @@ struct PlayerView: View {
                             .font(.title2)
                     }
                     
-                    Text(viewModel.currentPartTitle)
-                        .font(.headline)
-                        .lineLimit(1)
+                    // Text(viewModel.currentPartTitle)
+                    //     .font(.headline)
+                    //     .lineLimit(1)
                     
                     Spacer()
                     
