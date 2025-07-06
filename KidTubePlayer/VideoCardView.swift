@@ -42,10 +42,24 @@ struct VideoCardView: View {
                 // 观看进度条
                 GeometryReader {
                     geometry in
-                    Rectangle()
-                        .fill(.red)
-                        .frame(width: geometry.size.width * watchedPercentage, height: 4) // 高度固定为4
-                        .offset(y: geometry.size.height - 4) // 放置在底部
+                        Rectangle()
+                            .fill(.red)
+                            .frame(width: geometry.size.width * watchedPercentage, height: 4) // 高度固定为4
+                            .offset(y: geometry.size.height - 4) // 放置在底部
+                }
+                
+                // 视频时长显示
+                if let duration = video.duration {
+                    Text(duration.formattedDuration)
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(.black.opacity(0.7))
+                        .cornerRadius(6)
+                        .padding(8) // 距离右下角的边距
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                 }
             }
             
@@ -80,6 +94,7 @@ struct PlatformIconView: View {
                 platform == .youtube ? .red : Color(red: 0.2, green: 0.7, blue: 0.9) // Bilibili 的蓝色
             )
             .font(.title3)
+            // .offset(x: -4, y: 4) // 向左下角轻微偏移
             .padding(6)
             .background(.clear) 
             .clipShape(Circle())
@@ -107,9 +122,17 @@ extension Date {
     }
 }
 
+extension TimeInterval {
+    var formattedDuration: String {
+        let minutes = Int(self) / 60
+        let seconds = Int(self) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+}
+
 struct VideoCardView_Previews: PreviewProvider {
     static var previews: some View {
-        let sampleVideo = Video(id: "sampleID", platform: .youtube, title: "Sample Video Title", author: "Sample Author", viewCount: 1000, uploadDate: Date(), authorAvatarURL: nil, thumbnailURL: URL(string: "https://i.ytimg.com/vi/K-N_s5Yd2Yc/hqdefault.jpg"))
+        let sampleVideo = Video(id: "sampleID", platform: .youtube, title: "Sample Video Title", author: "Sample Author", viewCount: 1000, uploadDate: Date(), authorAvatarURL: nil, thumbnailURL: URL(string: "https://i.ytimg.com/vi/K-N_s5Yd2Yc/hqdefault.jpg"), duration: 3600)
         VideoCardView(video: sampleVideo)
             .previewLayout(.fixed(width: 350, height: 300))
             .padding()
